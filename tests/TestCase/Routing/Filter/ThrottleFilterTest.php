@@ -49,4 +49,33 @@ class ThrottleFilterTest extends TestCase
         $method->setAccessible(true);
         $method->invokeArgs($object, [new Request()]);
     }
+
+    /**
+     * Test when() method responsible for determining if the rate limit (10)
+     * is exceeded. We mock the filter so we can make _count() return the
+     * counters we need.
+     */
+    public function testWhenMethod()
+    {
+        $mock = $this->getMockBuilder('\Muffin\Throttle\Routing\Filter\ThrottleFilter')
+            ->setMethods(['_touch'])
+            ->getMock();
+
+        $mock->expects($this->at(0)) // test requests lower than rate limit
+             ->method('_touch')
+             ->will($this->returnValue(9));
+
+         $mock->expects($this->at(1)) // test requests equal to rate limit
+              ->method('_touch')
+              ->will($this->returnValue(10));
+
+          $mock->expects($this->at(2)) // test requests higher than rate limit
+               ->method('_touch')
+               ->will($this->returnValue(11));
+
+        $request = new Request;
+        $this->assertFalse($mock->when($request));
+        $this->assertFalse($mock->when($request));
+        $this->assertTrue($mock->when($request));
+    }
 }
