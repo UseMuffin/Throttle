@@ -9,8 +9,14 @@ use Cake\Routing\DispatcherFilter;
 
 class ThrottleFilter extends DispatcherFilter
 {
+
     public static $cacheConfig = 'throttle';
 
+    /**
+     * Class constructor.
+     *
+     * @param array $config Configuration options
+     */
     public function __construct($config = [])
     {
         $config += [
@@ -29,11 +35,23 @@ class ThrottleFilter extends DispatcherFilter
         $this->_initCache();
     }
 
+    /**
+     * Checks if the number of requests have exceeded the rate limit.
+     *
+     * @param Cake\Network\Request $request Request instance
+     * @return boolean False as long as number of requests are below the rate limit
+     */
     public function when(Request $request)
     {
-        return $this->config('rate') > $this->_touch($request);
+        return $this->_touch($request) > $this->config('rate');
     }
 
+    /**
+     * beforeDispatch.
+     *
+     * @param Cake\Event\Event $event Event instance
+     * @return Cake\Network\Response
+     */
     public function beforeDispatch(Event $event)
     {
         $event->stopPropagation();
@@ -43,6 +61,11 @@ class ThrottleFilter extends DispatcherFilter
         return $response;
     }
 
+    /**
+     * Initializes cache.
+     *
+     * @return void
+     */
     protected function _initCache()
     {
         if (!Cache::config(static::$cacheConfig)) {
@@ -53,13 +76,18 @@ class ThrottleFilter extends DispatcherFilter
         }
     }
 
+    /**
+     * Atomically updates cache using default CakePHP increment offset 1.
+     *
+     * @param Cake\Network\Request $request Request instance
+     * @return Cake\Cache\Cache
+     */
     protected function _touch(Request $request)
     {
         $key = $this->config('identifier');
         if (is_callable($key)) {
             $key = $key($request);
         }
-
-        return Cache::increment($key, static::$cacheConfig);
+        return Cache::increment($key, 1, static::$cacheConfig);
     }
 }
