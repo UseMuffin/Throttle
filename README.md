@@ -7,21 +7,32 @@
 
 (API) Rate limiting requests in CakePHP 3
 
-## Install
+## Requirements
 
-Using [Composer][composer]:
+- CakePHP 3.0+
+- CakePHP cache engine with support for atomic updates
+
+> Please note that this plugin will **not** work when using the default CakePHP
+> File Storage cache engine.
+
+## Installation
 
 ```
 composer require muffin/throttle:dev-master
 ```
+To make your application load the plugin either run:
 
-You then need to load the plugin. In `boostrap.php`, something like:
-
-```php
-\Cake\Core\Plugin::load('Muffin/Throttle');
+```bash
+./bin/cake plugin load Muffin/Throttle
 ```
 
-## Usage
+or add the following line to ``config/bootstrap.php``:
+
+```php
+Plugin::load('Muffin/Throttle');
+```
+
+## Configuration
 
 In `bootstrap.php`:
 
@@ -29,11 +40,12 @@ In `bootstrap.php`:
 DispatcherFactory::add('Muffin/Throttle.Throttle');
 ```
 
-This will use the defaults, 10 requests by minute for an given IP. You could
+This will use the defaults, 10 requests by minute for any given IP. You could
 easily change that by passing your own configuration:
 
 ```php
 DispatcherFactory::add('Muffin/Throttle.Throttle', [
+    'message' => 'Rate limit exceeded',
     'interval' => '+1 hour',
     'rate' => 300,
     'identifier' => function (Request $request) {
