@@ -36,14 +36,14 @@ class ThrottleFilter extends DispatcherFilter
     }
 
     /**
-     * Class constructor.
+     * Checks if the number of requests have exceeded the rate limit.
      *
      * @param Cake\Network\Request $request Request instance
-     * @return Cake\Network\Request
+     * @return boolean False as long as number of requests are below the rate limit
      */
     public function when(Request $request)
     {
-        return $this->config('rate') > $this->_touch($request);
+        return $this->_touch($request) > $this->config('rate');
     }
 
     /**
