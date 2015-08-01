@@ -49,12 +49,17 @@ DispatcherFactory::add('Muffin/Throttle.Throttle', [
     'interval' => '+1 hour',
     'rate' => 300,
     'identifier' => function (Request $request) {
-        return str_replace('Bearer ', '', $request->header('Authorization'));
+        if (null !== $request->header('Authorization')) {
+            return str_replace('Bearer ', '', $request->header('Authorization'));
+        }
+        return $request->clientIp();
     }
 ]);
 ```
 
-The above example would allow 300 requests/hour/token.
+The above example would allow 300 requests/hour/token and would first try to
+identify the client by JWT Bearer token before falling back to
+(Throttle default) IP address based identification.
 
 ## Patches & Features
 

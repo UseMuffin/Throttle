@@ -62,12 +62,12 @@ class ThrottleFilterTest extends TestCase
         $reflectionProperty->setValue($object, '10.33.10.10');
         $expected = '10.33.10.10_expires';
         $result = $reflectionMethod->invokeArgs($object, []);
-		$this->assertEquals($expected, $result);
+        $this->assertEquals($expected, $result);
 
         // test JWT Bearer Token based expiration key
         $reflectionProperty->setValue($object, 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6IjJiMzdhMzVhLTAxNWEtNGUzMi04YTUyLTYzZjQ3ODBkNjY1NCIsImV4cCI6MTQzOTAzMjQ5OH0.U6PkSf6IfSc-o-14UiGy4Rbr9kqqETCKOclf92PXwHY');
         $expected = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6IjJiMzdhMzVhLTAxNWEtNGUzMi04YTUyLTYzZjQ3ODBkNjY1NCIsImV4cCI6MTQzOTAzMjQ5OH0.U6PkSf6IfSc-o-14UiGy4Rbr9kqqETCKOclf92PXwHY_expires';
         $result = $reflectionMethod->invokeArgs($object, []);
-		$this->assertEquals($expected, $result);
+        $this->assertEquals($expected, $result);
     }
 }
