@@ -9,6 +9,10 @@ use Cake\TestSuite\TestCase;
 use Muffin\Throttle\Routing\Filter\ThrottleFilter;
 use StdClass;
 
+/**
+ * @requires extension apc
+ * @requires function apc_store
+ */
 class ThrottleFilterTest extends TestCase
 {
     public function testConstructor()
