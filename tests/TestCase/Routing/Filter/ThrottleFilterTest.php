@@ -12,23 +12,19 @@ class ThrottleFilterTest extends TestCase
     public function testConstructor()
     {
         $filter = new ThrottleFilter();
-
         $result = $filter->config();
 
-        $this->assertEquals([$filter, 'when'], $result['when']);
         $this->assertEquals('Rate limit exceeded', $result['message']);
-        $this->assertEquals('1 minute', $result['interval']);
-        $this->assertEquals(10, $result['rate']);
+        $this->assertEquals('+1 minute', $result['interval']);
+        $this->assertEquals(10, $result['limit']);
         $this->assertTrue(is_callable($result['identifier']));
-    }
 
-    public function testBeforeDispatch()
-    {
-        $filter = new ThrottleFilter();
-
-        $result = $filter->beforeDispatch(new Event('beforeDispatch'));
-        $this->assertInstanceOf('Cake\Network\Response', $result);
-        $this->assertEquals(429, $result->statusCode());
+        $expectedHeaders = [
+            'limit' => 'X-RateLimit-Limit',
+            'remaining' => 'X-RateLimit-Remaining',
+            'reset' => 'X-RateLimit-Reset'
+        ];
+        $this->assertEquals($expectedHeaders, $result['headers']);
     }
 
     /**
@@ -51,31 +47,27 @@ class ThrottleFilterTest extends TestCase
     }
 
     /**
-     * Test when() method responsible for determining if the rate limit (10)
-     * is exceeded. We mock the filter so we can make _count() return the
-     * counters we need.
+     * Test if proper string is returned for use as cache expiration key.
      */
-    public function testWhenMethod()
+    public function testGetCacheExpirationKeyMethod()
     {
-        $mock = $this->getMockBuilder('\Muffin\Throttle\Routing\Filter\ThrottleFilter')
-            ->setMethods(['_touch'])
-            ->getMock();
+        $object = new ThrottleFilter();
+        $reflection = new \ReflectionClass(get_class($object));
+        $reflectionMethod = $reflection->getMethod('_getCacheExpirationKey');
+        $reflectionMethod->setAccessible(true);
+        $reflectionProperty = $reflection->getProperty('_identifier');
+        $reflectionProperty->setAccessible(true);
 
-        $mock->expects($this->at(0)) // test requests lower than rate limit
-             ->method('_touch')
-             ->will($this->returnValue(9));
+        // test ip-adress based expiration key (Throttle default)
+        $reflectionProperty->setValue($object, '10.33.10.10');
+        $expected = '10.33.10.10_expires';
+        $result = $reflectionMethod->invokeArgs($object, []);
+		$this->assertEquals($expected, $result);
 
-         $mock->expects($this->at(1)) // test requests equal to rate limit
-              ->method('_touch')
-              ->will($this->returnValue(10));
-
-          $mock->expects($this->at(2)) // test requests higher than rate limit
-               ->method('_touch')
-               ->will($this->returnValue(11));
-
-        $request = new Request;
-        $this->assertFalse($mock->when($request));
-        $this->assertFalse($mock->when($request));
-        $this->assertTrue($mock->when($request));
+        // test JWT Bearer Token based expiration key
+        $reflectionProperty->setValue($object, 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6IjJiMzdhMzVhLTAxNWEtNGUzMi04YTUyLTYzZjQ3ODBkNjY1NCIsImV4cCI6MTQzOTAzMjQ5OH0.U6PkSf6IfSc-o-14UiGy4Rbr9kqqETCKOclf92PXwHY');
+        $expected = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6IjJiMzdhMzVhLTAxNWEtNGUzMi04YTUyLTYzZjQ3ODBkNjY1NCIsImV4cCI6MTQzOTAzMjQ5OH0.U6PkSf6IfSc-o-14UiGy4Rbr9kqqETCKOclf92PXwHY_expires';
+        $result = $reflectionMethod->invokeArgs($object, []);
+		$this->assertEquals($expected, $result);
     }
 }
