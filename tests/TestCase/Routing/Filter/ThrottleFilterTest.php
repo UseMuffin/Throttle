@@ -46,6 +46,36 @@ class ThrottleFilterTest extends TestCase
         $method->invokeArgs($object, [new Request()]);
     }
 
+
+    /**
+     * Throttle uses the cache className as configured for the default
+     * CacheEngine. Here we test if we can resolve the className.
+     */
+    public function testGetDefaultCacheConfigClassNameMethod()
+    {
+        $object = new ThrottleFilter();
+        $reflection = new \ReflectionClass(get_class($object));
+        $reflectionMethod = $reflection->getMethod('_getDefaultCacheConfigClassName');
+        $reflectionMethod->setAccessible(true);
+
+        // Test if short name gets resolved properly
+        Cache::config('default', [
+            'className' => 'File'
+        ]);
+        $expected = 'File';
+        $result = $reflectionMethod->invokeArgs($object, [new Request()]);
+        $this->assertEquals($expected, $result);
+
+        // Test if fully namespaced name gets resolved properly
+        Cache::drop('default');
+        Cache::config('default', [
+            'className' => 'Cake\Cache\Engine\FileEngine'
+        ]);
+        $expected = 'File';
+        $result = $reflectionMethod->invokeArgs($object, [new Request()]);
+        $this->assertEquals($expected, $result);
+    }
+
     /**
      * Test if proper string is returned for use as cache expiration key.
      */

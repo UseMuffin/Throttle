@@ -125,15 +125,23 @@ class ThrottleFilter extends DispatcherFilter
 
     /**
      * Gets the className of the default CacheEngine so the Throttle cache
-     * config can use the same. String cast is required to prevent returning
-     * a DebugEngine array/object for users with DebugKit enabled.
+     * config can use the same. String cast is required to catch a DebugEngine
+     * array/object for users with DebugKit enabled.
      *
      * @return string ClassName property of default Cache engine
      */
     protected function _getDefaultCacheConfigClassName()
     {
-        $config = (array)Cache::config('default');
-        return (string)$config['className'];
+        $config = Cache::config('default');
+        $engine = (string)$config['className'];
+
+        // short cache engine names can be returned immediately
+        if (strpos($engine, '\\') === false) {
+            return $engine;
+        }
+        // fully namespace cache engine names need extracting class name
+        preg_match('/.+\\\\(.+)Engine/', $engine, $matches);
+        return $matches[1];
     }
 
     /**
