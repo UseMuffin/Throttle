@@ -183,8 +183,8 @@ class ThrottleFilter extends DispatcherFilter
         if (!is_array($this->config('headers'))) {
             return;
         }
-
         $headers = $this->config('headers');
+
         $response->header([
             $headers['limit'] => $this->config('limit'),
             $headers['remaining'] => $this->_getRemainingConnections(),
