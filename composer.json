@@ -23,6 +23,11 @@
             "role": "Author"
         },
         {
+            "name": "Bravo Kernel",
+            "homepage": "https://github.com/bravo-kernel",
+            "role": "Contributor"
+        },
+        {
             "name": "Others",
             "homepage": "https://github.com/usemuffin/throttle/graphs/contributors"
         }

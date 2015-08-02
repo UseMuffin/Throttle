@@ -61,6 +61,37 @@ The above example would allow 300 requests/hour/token and would first try to
 identify the client by JWT Bearer token before falling back to
 (Throttle default) IP address based identification.
 
+### X-headers
+
+By default Throttle will add X-headers with rate limiting information
+to all responses:
+
+```
+X-RateLimit-Limit: 10
+X-RateLimit-Remaining: 7
+X-RateLimit-Reset: 1438434161
+```
+
+To customize the header names simply pass (all of them) to your configuration:
+
+```php
+DispatcherFactory::add('Muffin/Throttle.Throttle', [
+    'headers' => [
+        'limit' => 'X-MyRateLimit-Limit',
+        'remaining' => 'X-MyRateLimit-Remaining',
+        'reset' => 'X-MyRateLimit-Reset'
+    ]
+]);
+```
+
+To disable the headers pass ``false``:
+
+```php
+DispatcherFactory::add('Muffin/Throttle.Throttle', [
+    'headers' => false
+]);
+```
+
 ## Patches & Features
 
 * Fork
