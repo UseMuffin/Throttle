@@ -65,6 +65,31 @@ class ThrottleFilterTest extends TestCase
     }
 
     /**
+     * Test afterDispatch
+     */
+    public function testAfterDispatch()
+    {
+        Cache::drop('throttle');
+        Cache::config('throttle', [
+            'className' => 'Cake\Cache\Engine\ApcEngine',
+            'prefix' => 'throttle_'
+        ]);
+
+        $filter = new ThrottleFilter([
+            'limit' => 1
+        ]);
+        $response = new Response();
+        $request = new Request([
+            'environment' => [
+                'HTTP_CLIENT_IP' => '192.168.1.2'
+            ]
+        ]);
+
+        $event = new Event('Dispatcher.beforeDispatch', $this, compact('request', 'response'));
+        $result = $filter->afterDispatch($event);
+        $this->assertInstanceOf('Cake\Network\Response', $result);
+    }
+    /**
      * Using the File Storage cache engine should throw a LogicException.
      *
      * @expectedException \LogicException

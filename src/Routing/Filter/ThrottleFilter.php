@@ -86,8 +86,19 @@ class ThrottleFilter extends DispatcherFilter
         $response = new Response(['body' => $this->config('message')]);
         $response->httpCodes([429 => 'Too Many Requests']);
         $response->statusCode(429);
-        $this->_setHeaders($response);
         return $response;
+    }
+
+    /**
+     * afterDispatch.
+     *
+     * @param Cake\Event\Event $event Event instance
+     * @return Cake\Network\Response Response instance
+     */
+    public function afterDispatch(Event $event)
+    {
+        $this->_setHeaders($event->data['response']);
+        return $event->data['response'];
     }
 
     /**
