@@ -47,7 +47,7 @@ easily change that by passing your own configuration:
 DispatcherFactory::add('Muffin/Throttle.Throttle', [
     'message' => 'Rate limit exceeded',
     'interval' => '+1 hour',
-    'rate' => 300,
+    'limit' => 300,
     'identifier' => function (Request $request) {
         if (null !== $request->header('Authorization')) {
             return str_replace('Bearer ', '', $request->header('Authorization'));
