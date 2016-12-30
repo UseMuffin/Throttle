@@ -36,6 +36,14 @@ Plugin::load('Muffin/Throttle');
 
 In `bootstrap.php`:
 
+Include the class namespace:
+
+```php
+use Cake\Routing\DispatcherFactory;
+```
+
+Add a configuration:
+
 ```php
 DispatcherFactory::add('Muffin/Throttle.Throttle');
 ```
@@ -115,3 +123,4 @@ Copyright (c) 2015, [Use Muffin] and licensed under [The MIT License][mit].
 [composer]:http://getcomposer.org
 [mit]:http://www.opensource.org/licenses/mit-license.php
 [muffin]:http://usemuffin.com
+
