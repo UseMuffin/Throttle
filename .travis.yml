@@ -9,11 +9,6 @@ php:
 dist: trusty
 
 env:
-  matrix:
-    - DB=mysql db_dsn='mysql://root@127.0.0.1/cakephp_test'
-    - DB=pgsql db_dsn='postgres://postgres@127.0.0.1/cakephp_test'
-    - DB=sqlite db_dsn='sqlite:///:memory:'
-
   global:
     - DEFAULT=1
 
@@ -27,28 +22,23 @@ matrix:
       env: PHPCS=1 DEFAULT=0
 
 before_script:
-  - if [[ $TRAVIS_PHP_VERSION != 7.* ]]; then phpenv config-rm xdebug.ini; fi
+  - if [[ $TRAVIS_PHP_VERSION != 7.0 ]]; then phpenv config-rm xdebug.ini; fi
 
   - composer install --prefer-dist --no-interaction
-
-  - if [ $DB = 'mysql' ]; then mysql -e 'CREATE DATABASE cakephp_test;'; fi
-  - if [ $DB = 'pgsql' ]; then psql -c 'CREATE DATABASE cakephp_test;' -U postgres; fi
-
-  - pecl channel-update pecl.php.net
 
   - if [[ $TRAVIS_PHP_VERSION != 7.1 ]] ; then echo 'extension = apcu.so' >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini; fi
   - if [[ $TRAVIS_PHP_VERSION != 7.1 ]] ; then echo 'apc.enable_cli = 1' >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini; fi
   - if [[ $TRAVIS_PHP_VERSION =~ 5.[56] ]] ; then echo yes | pecl install apcu-4.0.10; fi
-  - if [[ $TRAVIS_PHP_VERSION = 7.0 ]] ; then echo yes | pecl install channel://pecl.php.net/apcu-5.1.5; fi
+  - if [[ $TRAVIS_PHP_VERSION = 7.0 ]] ; then echo yes | pecl install apcu-5.1.7; fi
 
 script:
-  - if [[ $DEFAULT = 1 && $TRAVIS_PHP_VERSION = 7.* ]]; then phpunit --coverage-clover=clover.xml; fi
-  - if [[ $DEFAULT = 1 && $TRAVIS_PHP_VERSION != 7.* ]]; then phpunit; fi
+  - if [[ $DEFAULT = 1 && $TRAVIS_PHP_VERSION = 7.0 ]]; then phpunit --coverage-clover=clover.xml; fi
+  - if [[ $DEFAULT = 1 && $TRAVIS_PHP_VERSION != 7.0 ]]; then phpunit; fi
 
   - if [[ $PHPCS = 1 ]]; then vendor/bin/phpcs -p --extensions=php --standard=vendor/cakephp/cakephp-codesniffer/CakePHP ./src ./tests; fi
 
 after_success:
-  - if [[ $DEFAULT = 1 && $DB = 'mysql' && $TRAVIS_PHP_VERSION = 7.* ]]; then bash <(curl -s https://codecov.io/bash); fi
+  - if [[ $DEFAULT = 1 && $TRAVIS_PHP_VERSION = 7.0 ]]; then bash <(curl -s https://codecov.io/bash); fi
 
 notifications:
   email: false
