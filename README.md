@@ -1,11 +1,14 @@
 # Throttle
 
 [![Build Status](https://img.shields.io/travis/UseMuffin/Throttle/master.svg?style=flat-square)](https://travis-ci.org/UseMuffin/Throttle)
-[![Coverage](https://img.shields.io/coveralls/UseMuffin/Throttle/master.svg?style=flat-square)](https://coveralls.io/r/UseMuffin/Throttle)
+[![Coverage Status](https://img.shields.io/codecov/c/github/UseMuffin/Throttle.svg?style=flat-square)](https://codecov.io/github/UseMuffin/Throttle)
 [![Total Downloads](https://img.shields.io/packagist/dt/muffin/throttle.svg?style=flat-square)](https://packagist.org/packages/muffin/throttle)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](LICENSE)
 
 (API) Rate limiting requests in CakePHP 3
+
+This plugin allows you to limit the number of requests a client can make to your
+app in a given time frame.
 
 ## Requirements
 
@@ -13,12 +16,12 @@
 - CakePHP cache engine with support for atomic updates
 
 > Please note that this plugin will **not** work when using the default CakePHP
-> File Storage cache engine.
+> File Storage cache engine as it does not support atomic increment.
 
 ## Installation
 
 ```
-composer require muffin/throttle:dev-master
+composer require muffin/throttle
 ```
 To make your application load the plugin either run:
 
@@ -48,7 +51,7 @@ Add a configuration:
 DispatcherFactory::add('Muffin/Throttle.Throttle');
 ```
 
-This will use the defaults, 10 requests by minute for any given IP. You could
+This will use the defaults, 10 requests per minute for any given IP. You could
 easily change that by passing your own configuration:
 
 ```php
@@ -117,10 +120,9 @@ http://github.com/usemuffin/throttle/issues
 
 ## License
 
-Copyright (c) 2015, [Use Muffin] and licensed under [The MIT License][mit].
+Copyright (c) 2015-2017, [Use Muffin] and licensed under [The MIT License][mit].
 
 [cakephp]:http://cakephp.org
 [composer]:http://getcomposer.org
 [mit]:http://www.opensource.org/licenses/mit-license.php
 [muffin]:http://usemuffin.com
-
