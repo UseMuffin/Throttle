@@ -291,6 +291,7 @@ class ThrottleFilterTest extends TestCase
             $obj->property = $obj->class->getProperty($property);
             $obj->property->setAccessible(true);
         }
+
         return $obj;
     }
 }

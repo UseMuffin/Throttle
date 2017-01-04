@@ -78,6 +78,7 @@ class ThrottleFilter extends DispatcherFilter
         // client has not exceeded rate limit
         if ($this->_count <= $this->config('limit')) {
             $this->_setHeaders($event->data['response']);
+
             return;
         }
 
@@ -86,6 +87,7 @@ class ThrottleFilter extends DispatcherFilter
         $response = new Response(['body' => $this->config('message')]);
         $response->httpCodes([429 => 'Too Many Requests']);
         $response->statusCode(429);
+
         return $response;
     }
 
@@ -98,6 +100,7 @@ class ThrottleFilter extends DispatcherFilter
     public function afterDispatch(Event $event)
     {
         $this->_setHeaders($event->data['response']);
+
         return $event->data['response'];
     }
 
@@ -152,6 +155,7 @@ class ThrottleFilter extends DispatcherFilter
         }
         // fully namespace cache engine names need extracting class name
         preg_match('/.+\\\\(.+)Engine/', $engine, $matches);
+
         return $matches[1];
     }
 
@@ -170,6 +174,7 @@ class ThrottleFilter extends DispatcherFilter
             Cache::write($this->_identifier, 0, static::$cacheConfig);
             Cache::write($this->_getCacheExpirationKey(), strtotime($this->config('interval'), time()), static::$cacheConfig);
         }
+
         return Cache::increment($this->_identifier, 1, static::$cacheConfig);
     }
 
@@ -214,6 +219,7 @@ class ThrottleFilter extends DispatcherFilter
         if ($remaining <= 0) {
             return 0;
         }
+
         return $remaining;
     }
 }
