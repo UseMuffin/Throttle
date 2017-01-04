@@ -50,7 +50,7 @@ class ThrottleFilterTest extends TestCase
         $response = new Response();
         $request = new Request([
             'environment' => [
-                'HTTP_CLIENT_IP' => '192.168.1.2'
+                'REMOTE_ADDR' => '192.168.1.2'
             ]
         ]);
 
