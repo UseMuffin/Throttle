@@ -15,9 +15,6 @@ app in a given time frame.
 - CakePHP 3.0+
 - CakePHP cache engine with support for atomic updates
 
-> Please note that this plugin will **not** work when using the default CakePHP
-> File Storage cache engine as it does not support atomic increment.
-
 ## Installation
 
 ```
@@ -36,6 +33,19 @@ Plugin::load('Muffin/Throttle');
 ```
 
 ## Configuration
+
+In your `config/app.php` add a cache config named `throttle` under the `Cache` key
+with required config. For e.g.:
+
+```php
+'throttle' => [
+    'className' => 'Apc',
+    'prefix' => 'throttle_'
+],
+```
+
+**Note:** This plugin will **NOT** work when using the `File` cache engine as it
+does not support atomic increment.
 
 In `bootstrap.php`:
 
