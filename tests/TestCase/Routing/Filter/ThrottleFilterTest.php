@@ -9,12 +9,23 @@ use Cake\TestSuite\TestCase;
 use Muffin\Throttle\Routing\Filter\ThrottleFilter;
 use StdClass;
 
-/**
- * @requires extension apc
- * @requires function apc_store
- */
 class ThrottleFilterTest extends TestCase
 {
+    /**
+     * setUp method
+     *
+     * @return void
+     */
+    public function setUp()
+    {
+        parent::setUp();
+
+        $this->skipIf(!function_exists('apcu_store'), 'APCu is not installed or configured properly.');
+        if ((PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg')) {
+            $this->skipIf(!ini_get('apc.enable_cli'), 'APC is not enabled for the CLI.');
+        }
+    }
+
     public function testConstructor()
     {
         $filter = new ThrottleFilter();
@@ -50,7 +61,7 @@ class ThrottleFilterTest extends TestCase
         $response = new Response();
         $request = new Request([
             'environment' => [
-                'HTTP_CLIENT_IP' => '192.168.1.2'
+                'REMOTE_ADDR' => '192.168.1.2'
             ]
         ]);
 
@@ -291,6 +302,7 @@ class ThrottleFilterTest extends TestCase
             $obj->property = $obj->class->getProperty($property);
             $obj->property->setAccessible(true);
         }
+
         return $obj;
     }
 }
