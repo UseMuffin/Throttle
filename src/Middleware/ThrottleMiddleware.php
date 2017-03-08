@@ -6,11 +6,29 @@ use Cake\Cache\Cache;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Zend\Diactoros\Stream;
 
 class ThrottleMiddleware
 {
 
     Use InstanceConfigTrait;
+
+
+    /*
+     * Default config for Throttle Middleware
+     *
+     * @var array
+     */
+    protected $_defaultConfig = [
+        'message' => 'Rate limit exceeded',
+        'interval' => '+1 minute',
+        'limit' => 10,
+        'headers' => [
+            'limit' => 'X-RateLimit-Limit',
+            'remaining' => 'X-RateLimit-Remaining',
+            'reset' => 'X-RateLimit-Reset'
+        ]
+    ];
 
     /**
      * Cache configuration name
@@ -48,17 +66,9 @@ class ThrottleMiddleware
     public function __construct($config = [])
     {
         $config += [
-            'message' => 'Rate limit exceeded',
-            'interval' => '+1 minute',
-            'limit' => 10,
             'identifier' => function (ServerRequestInterface $request) {
                 return $request->clientIp();
-            },
-            'headers' => [
-                'limit' => 'X-RateLimit-Limit',
-                'remaining' => 'X-RateLimit-Remaining',
-                'reset' => 'X-RateLimit-Reset'
-            ]
+            }
         ];
         $this->setConfig($config);
     }
@@ -69,14 +79,19 @@ class ThrottleMiddleware
         $this->_initCache();
         $this->_count = $this->_touch();
 
+
+
         if ($this->_count > $this->getConfig('limit')) {
-            $response->withStatus(429)
-                ->withBody($this->getConfig('message'));
-            return $response;
+            $stream = new Stream('php://memory','wb+');
+            $stream->write((string)$this->getConfig('message'));
+
+            return $response->withStatus(429)
+                ->withBody($stream);
         }
 
-        $response = $this->_setHeaders($response);
-        return $next($request, $response);
+        $response = $next($request, $response);
+
+        return $this->_setHeaders($response);
     }
 
 
@@ -105,12 +120,11 @@ class ThrottleMiddleware
     protected function _initCache()
     {
         if (!Cache::getConfig(static::$cacheConfig)) {
-            Cache::setConfig([
+            Cache::setConfig(static::$cacheConfig, [
                 'className' => $this->_getDefaultCacheConfigClassName(),
                 'prefix' => static::$cacheConfig . '_' . $this->_identifier,
                 'duration' => $this->getConfig('interval'),
             ]);
-            Cache::getConfig(static::$cacheConfig);
         }
     }
 
@@ -178,9 +192,9 @@ class ThrottleMiddleware
         }
         $headers = $this->getConfig('headers');
 
-        return $response->withHeader($headers['limit'], $this->getConfig('limit'))
-            ->withHeader($headers['remaining'], $this->_getRemainingConnections())
-            ->withHeader($headers['reset'], Cache::read($this->_getCacheExpirationKey(), static::$cacheConfig));
+        return $response->withHeader($headers['limit'], (string)$this->getConfig('limit'))
+            ->withHeader($headers['remaining'], (string)$this->_getRemainingConnections())
+            ->withHeader($headers['reset'], (string)Cache::read($this->_getCacheExpirationKey(), static::$cacheConfig));
     }
 
     /**
@@ -197,6 +211,5 @@ class ThrottleMiddleware
 
         return $remaining;
     }
-
 
 }
