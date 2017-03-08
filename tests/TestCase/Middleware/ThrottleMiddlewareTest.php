@@ -3,8 +3,8 @@ namespace Muffin\Throttle\Test\TestCase\Middleware;
 
 use Cake\Cache\Cache;
 use Cake\Core\Configure;
-use Cake\Http\ServerRequest;
 use Cake\Http\Response;
+use Cake\Http\ServerRequest;
 use Cake\TestSuite\TestCase;
 use Muffin\Throttle\Middleware\ThrottleMiddleware;
 use StdClass;
@@ -67,7 +67,12 @@ class ThrottleMiddlewareTest extends TestCase
             ]
         ]);
 
-        $result = $middleware($request, $response, function($request, $response){ return $response;});
+        $result = $middleware(
+            $request,
+            $response, function ($request, $response) {
+                return $response;
+            }
+        );
 
         $this->assertInstanceOf('Cake\Http\Response', $result);
         $this->assertEquals(429, $result->getStatusCode());

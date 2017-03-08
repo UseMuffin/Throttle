@@ -1,8 +1,8 @@
 <?php
 namespace Muffin\Throttle\Middleware;
 
-use Cake\Core\InstanceConfigTrait;
 use Cake\Cache\Cache;
+use Cake\Core\InstanceConfigTrait;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -11,7 +11,7 @@ use Zend\Diactoros\Stream;
 class ThrottleMiddleware
 {
 
-    Use InstanceConfigTrait;
+    use InstanceConfigTrait;
 
 
     /*
@@ -61,7 +61,7 @@ class ThrottleMiddleware
     /**
      * ThrottleMiddleware constructor.
      *
-     * @param array $_config Configuration options
+     * @param array $config Configuration options
      */
     public function __construct($config = [])
     {
@@ -73,6 +73,15 @@ class ThrottleMiddleware
         $this->setConfig($config);
     }
 
+
+    /**
+     * Called when the class is used as a function
+     *
+     * @param ServerRequestInterface $request
+     * @param ResponseInterface $response
+     * @param callable $next
+     * @return ResponseInterface
+     */
     public function __invoke(ServerRequestInterface $request, ResponseInterface $response, callable $next)
     {
         $this->_setIdentifier($request);
@@ -80,7 +89,7 @@ class ThrottleMiddleware
         $this->_count = $this->_touch();
 
         if ($this->_count > $this->getConfig('limit')) {
-            $stream = new Stream('php://memory','wb+');
+            $stream = new Stream('php://memory', 'wb+');
             $stream->write((string)$this->getConfig('message'));
 
             return $response->withStatus(429)
