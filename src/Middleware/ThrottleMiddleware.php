@@ -77,9 +77,9 @@ class ThrottleMiddleware
     /**
      * Called when the class is used as a function
      *
-     * @param ServerRequestInterface $request
-     * @param ResponseInterface $response
-     * @param callable $next
+     * @param ServerRequestInterface $request Request object
+     * @param ResponseInterface $response Response object
+     * @param callable $next Next class in middelware
      * @return ResponseInterface
      */
     public function __invoke(ServerRequestInterface $request, ResponseInterface $response, callable $next)
@@ -218,5 +218,4 @@ class ThrottleMiddleware
 
         return $remaining;
     }
-
 }
