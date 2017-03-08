@@ -229,7 +229,7 @@ class ThrottleMiddlewareTest extends TestCase
         ]);
         $reflection = $this->getReflection($middleware, '_setHeaders');
         $result = $reflection->method->invokeArgs($middleware, [new Response()]);
-        $this->assertNull($result);
+        $this->assertInstanceOf('Cake\Http\Response', $result);
     }
 
     /**
