@@ -79,8 +79,6 @@ class ThrottleMiddleware
         $this->_initCache();
         $this->_count = $this->_touch();
 
-
-
         if ($this->_count > $this->getConfig('limit')) {
             $stream = new Stream('php://memory','wb+');
             $stream->write((string)$this->getConfig('message'));

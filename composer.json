@@ -39,9 +39,9 @@
     "require": {
     },
     "require-dev": {
-        "cakephp/cakephp": "3.4.*",
+        "cakephp/cakephp": "~3.0",
         "cakephp/cakephp-codesniffer": "2.*",
-        "phpunit/phpunit": "^5.7|^6.0"
+        "phpunit/phpunit": "<6.0"
     },
     "autoload": {
         "psr-4": {
