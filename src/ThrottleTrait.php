@@ -64,7 +64,6 @@ trait ThrottleTrait
         'header' => true
     ];
 
-
     /**
      * Set the default configuration
      *
@@ -76,7 +75,7 @@ trait ThrottleTrait
             return $request->clientIp();
         };
 
-        if ($this INSTANCEOF DispatcherFilter) {
+        if ($this instanceof DispatcherFilter) {
             $this->_compatFunctions = [
                 'getConfig' => 'config',
                 'setConfig' => 'config',
@@ -184,21 +183,21 @@ trait ThrottleTrait
      */
     protected function _setHeaders(ResponseInterface $response)
     {
-        $config_function = $this->_compatFunctions['getConfig'];
+        $configFunction = $this->_compatFunctions['getConfig'];
         $header = $this->_compatFunctions['header'];
 
-        $headers = $this->$config_function('headers');
+        $headers = $this->$configFunction('headers');
 
         if (!is_array($headers)) {
             return $response;
         }
 
         if ($header) {
-            $response = $response->withHeader($headers['limit'], (string)$this->$config_function('limit'))
+            $response = $response->withHeader($headers['limit'], (string)$this->$configFunction('limit'))
                 ->withHeader($headers['remaining'], (string)$this->_getRemainingConnections())
                 ->withHeader($headers['reset'], (string)Cache::read($this->_getCacheExpirationKey(), static::$cacheConfig));
         } else {
-            $response->header($headers['limit'], $this->$config_function('limit'));
+            $response->header($headers['limit'], $this->$configFunction('limit'));
             $response->header($headers['remaining'], $this->_getRemainingConnections());
             $response->header($headers['reset'], Cache::read($this->_getCacheExpirationKey(), static::$cacheConfig));
         }
