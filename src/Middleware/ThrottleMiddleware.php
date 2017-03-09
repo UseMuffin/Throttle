@@ -13,7 +13,6 @@ class ThrottleMiddleware
 
     use InstanceConfigTrait;
 
-
     /*
      * Default config for Throttle Middleware
      *
@@ -73,12 +72,11 @@ class ThrottleMiddleware
         $this->setConfig($config);
     }
 
-
     /**
      * Called when the class is used as a function
      *
-     * @param ServerRequestInterface $request Request object
-     * @param ResponseInterface $response Response object
+     * @param \Psr\Http\Message\ServerRequestInterface $request Request object
+     * @param \Psr\Http\Message\ResponseInterface $response Response object
      * @param callable $next Next class in middelware
      * @return ResponseInterface
      */
@@ -101,14 +99,13 @@ class ThrottleMiddleware
         return $this->_setHeaders($response);
     }
 
-
     /**
      * Sets the identifier class property. Uses Throttle default IP address
      * based identifier unless a callable alternative is passed.
      *
-     * @param Psr\Http\Message\ResponseInterface $request RequestInterface instance
+     * @param \Psr\Http\Message\ResponseInterface $request RequestInterface instance
      * @return void
-     * @throws InvalidArgumentException
+     * @throws \InvalidArgumentException
      */
     protected function _setIdentifier(RequestInterface $request)
     {
@@ -164,7 +161,7 @@ class ThrottleMiddleware
      * increment() failing on 0. A separate cache key is created to store
      * the interval expiration time in epoch.
      *
-     * @return Cake\Cache\Cache
+     * @return \Cake\Cache\Cache
      */
     protected function _touch()
     {
@@ -189,7 +186,7 @@ class ThrottleMiddleware
     /**
      * Extends response with X-headers containing rate limiting information.
      *
-     * @param Psr\Http\Message\ResponseInterface $response ResponseInterface instance
+     * @param \Psr\Http\Message\ResponseInterface $response ResponseInterface instance
      * @return ResponseInterface
      */
     protected function _setHeaders(ResponseInterface $response)
