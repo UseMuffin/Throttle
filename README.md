@@ -47,6 +47,10 @@ with required config. For e.g.:
 **Note:** This plugin will **NOT** work when using the `File` cache engine as it
 does not support atomic increment.
 
+\
+\
+**Using the Dispatch Filter**
+
 In `bootstrap.php`:
 
 Include the class namespace:
@@ -81,6 +85,41 @@ DispatcherFactory::add('Muffin/Throttle.Throttle', [
 The above example would allow 300 requests/hour/token and would first try to
 identify the client by JWT Bearer token before falling back to
 (Throttle default) IP address based identification.
+
+\
+**Using the Middleware**
+
+**Note:** This requires Cakephp version 3.4 or greater.  
+
+Include the middleware in inside of the Application.php:
+```php
+use Muffin\Throttle\Middlware\ThrottleMiddleware.php;
+```
+
+Add the middleware to the stack and pass your custom configuration:
+```php
+public function middleware($middleware)
+{
+    // Various other middlewares for error handling, routing etc. added here.
+     
+    $throttleMiddleware = new ThrottleMiddleware([
+        'message' => 'Rate limit exceeded',
+        'interval' => '+1 hour',
+        'limit' => 300,
+        'identifier' => function (Request $request) {
+            if (null !== $request->header('Authorization')) {
+                return str_replace('Bearer ', '', $request->header('Authorization'));
+            }
+            return $request->clientIp();
+        }
+    ]);
+    
+    $middlewareQueue->add($throttleMiddleware);
+    
+    return $middlewareQueue;
+}
+```
+The above example would allow 300 requests/hour/token and would first try to identify the client by JWT Bearer token before falling back to (Throttle default) IP address based identification. 
 
 ### X-headers
 

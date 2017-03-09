@@ -152,14 +152,17 @@ class ThrottleMiddlewareTest extends TestCase
 
         // test if new cache config is created if it does not exist
         Cache::drop('throttle');
+
         $middleware = new ThrottleMiddleware();
         $reflection = $this->getReflection($middleware, '_initCache');
         $reflection->method->invokeArgs($middleware, []);
+
         $expected = [
             'className' => 'File',
             'prefix' => 'throttle_',
             'duration' => '+1 minute'
         ];
+
         $this->assertEquals($expected, Cache::getConfig('throttle'));
 
         // cache config creation should be skipped if it already exists

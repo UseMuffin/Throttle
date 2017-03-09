@@ -256,7 +256,7 @@ class ThrottleFilterTest extends TestCase
         ]);
         $reflection = $this->getReflection($filter, '_setHeaders');
         $result = $reflection->method->invokeArgs($filter, [new Response()]);
-        $this->assertNull($result);
+        $this->assertInstanceOf('Cake\Http\Response', $result);
     }
 
     /**
