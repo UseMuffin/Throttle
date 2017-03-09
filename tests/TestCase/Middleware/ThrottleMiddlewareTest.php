@@ -60,7 +60,7 @@ class ThrottleMiddlewareTest extends TestCase
         ]);
 
         $middleware = new ThrottleMiddleware([
-            'limit' => 0
+            'limit' => 1
         ]);
 
         $response = new Response();
@@ -72,7 +72,26 @@ class ThrottleMiddlewareTest extends TestCase
 
         $result = $middleware(
             $request,
-            $response, function ($request, $response) {
+            $response,
+            function ($request, $response) {
+                return $response;
+            }
+        );
+
+        $expectedHeaders = [
+            'X-RateLimit-Limit',
+            'X-RateLimit-Remaining',
+            'X-RateLimit-Reset'
+        ];
+
+        $this->assertInstanceOf('Cake\Http\Response', $result);
+        $this->assertEquals(200, $result->getStatusCode());
+        $this->assertEquals(3, count(array_intersect($expectedHeaders, array_keys($result->getHeaders()))));
+
+        $result = $middleware(
+            $request,
+            $response,
+            function ($request, $response) {
                 return $response;
             }
         );
@@ -270,7 +289,7 @@ class ThrottleMiddlewareTest extends TestCase
      * Convenience function to return an object with reflection class, accessible
      * protected method and optional accessible protected property.
      */
-    public function getReflection($object, $method = false, $property = false)
+    protected function getReflection($object, $method = false, $property = false)
     {
         $obj = new stdClass();
         $obj->class = new \ReflectionClass(get_class($object));

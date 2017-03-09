@@ -78,7 +78,7 @@ class ThrottleMiddleware
      * @param \Psr\Http\Message\ServerRequestInterface $request Request object
      * @param \Psr\Http\Message\ResponseInterface $response Response object
      * @param callable $next Next class in middelware
-     * @return ResponseInterface
+     * @return \Psr\Http\Message\ResponseInterface
      */
     public function __invoke(ServerRequestInterface $request, ResponseInterface $response, callable $next)
     {
@@ -161,7 +161,7 @@ class ThrottleMiddleware
      * increment() failing on 0. A separate cache key is created to store
      * the interval expiration time in epoch.
      *
-     * @return \Cake\Cache\Cache
+     * @return mixed
      */
     protected function _touch()
     {
@@ -187,7 +187,7 @@ class ThrottleMiddleware
      * Extends response with X-headers containing rate limiting information.
      *
      * @param \Psr\Http\Message\ResponseInterface $response ResponseInterface instance
-     * @return ResponseInterface
+     * @return \Psr\Http\Message\ResponseInterface
      */
     protected function _setHeaders(ResponseInterface $response)
     {
