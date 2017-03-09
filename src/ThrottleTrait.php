@@ -111,7 +111,6 @@ trait ThrottleTrait
         $getFunction = $this->_compatFunctions['getConfig'];
         $setFunction = $this->_compatFunctions['setConfig'];
         if (!Cache::$getFunction(static::$cacheConfig)) {
-            var_dump('here');
             Cache::$setFunction(static::$cacheConfig, [
                 'className' => $this->_getDefaultCacheConfigClassName(),
                 'prefix' => static::$cacheConfig . '_' . $this->_identifier,
