@@ -25,7 +25,7 @@ before_script:
   - composer install --prefer-dist --no-interaction
 
   - if [[ $TRAVIS_PHP_VERSION =~ 5.[56] ]] ; then echo yes | pecl install apcu-4.0.10; fi
-  - if [[ $TRAVIS_PHP_VERSION = 7.* ]] ; then echo yes | pecl install apcu-5.1.7; fi
+  - if [[ $TRAVIS_PHP_VERSION = 7.0 ]] ; then echo yes | pecl install apcu-5.1.7; fi
   - echo 'apc.enable_cli = 1' >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
 
 script:
