@@ -12,7 +12,7 @@ use Muffin\Throttle\ThrottleTrait;
 class ThrottleFilter extends DispatcherFilter
 {
 
-    Use ThrottleTrait;
+    use ThrottleTrait;
 
     /**
      * Class constructor.
@@ -40,6 +40,7 @@ class ThrottleFilter extends DispatcherFilter
         // client has not exceeded rate limit
         if ($this->_count <= $this->getConfig('limit')) {
             $this->_setHeaders($event->data['response']);
+
             return;
         }
 
@@ -64,5 +65,4 @@ class ThrottleFilter extends DispatcherFilter
 
         return $event->data['response'];
     }
-
 }
