@@ -3,8 +3,6 @@ namespace Muffin\Throttle;
 
 use Cake\Cache\Cache;
 use Cake\Routing\DispatcherFilter;
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\ServerRequestInterface;
 
 trait ThrottleTrait
 {
@@ -71,7 +69,7 @@ trait ThrottleTrait
      */
     protected function _setConfiguration()
     {
-        $this->_throttleConfig['identifier'] = function (ServerRequestInterface $request) {
+        $this->_throttleConfig['identifier'] = function ($request) {
             return $request->clientIp();
         };
 
@@ -90,11 +88,11 @@ trait ThrottleTrait
      * Sets the identifier class property. Uses Throttle default IP address
      * based identifier unless a callable alternative is passed.
      *
-     * @param \Psr\Http\Message\RequestInterface $request RequestInterface instance
+     * @param \Psr\Http\Message\ServerRequestInterface|\Cake\Http\Request $request RequestInterface instance
      * @return void
      * @throws \InvalidArgumentException
      */
-    protected function _setIdentifier(ServerRequestInterface $request)
+    protected function _setIdentifier($request)
     {
         $key = $this->{$this->_compatFunctions['getConfig']}('identifier');
         if (!is_callable($this->{$this->_compatFunctions['getConfig']}('identifier'))) {
@@ -178,10 +176,10 @@ trait ThrottleTrait
     /**
      * Extends response with X-headers containing rate limiting information.
      *
-     * @param \Psr\Http\Message\ResponseInterface $response ResponseInterface instance
+     * @param \Psr\Http\Message\ResponseInterface|\Cake\Network\Response $response ResponseInterface instance
      * @return \Psr\Http\Message\ResponseInterface
      */
-    protected function _setHeaders(ResponseInterface $response)
+    protected function _setHeaders($response)
     {
         $configFunction = $this->_compatFunctions['getConfig'];
         $header = $this->_compatFunctions['header'];
