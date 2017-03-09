@@ -103,11 +103,11 @@ class ThrottleMiddleware
      * Sets the identifier class property. Uses Throttle default IP address
      * based identifier unless a callable alternative is passed.
      *
-     * @param \Psr\Http\Message\ResponseInterface $request RequestInterface instance
+     * @param \Psr\Http\Message\RequestInterface $request RequestInterface instance
      * @return void
      * @throws \InvalidArgumentException
      */
-    protected function _setIdentifier(RequestInterface $request)
+    protected function _setIdentifier(ServerRequestInterface $request)
     {
         $key = $this->getConfig('identifier');
         if (!is_callable($this->getConfig('identifier'))) {
