@@ -220,6 +220,7 @@ class ThrottleFilterTest extends TestCase
         $this->assertEquals(2, Cache::read('test-identifier', 'throttle'));
         $this->assertEquals($expires, Cache::read('test-identifier_expires', 'throttle'));
 
+        Cache::delete('test-identifier', 'throttle');
         Cache::drop('throttle');
     }
 
