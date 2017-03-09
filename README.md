@@ -86,14 +86,13 @@ The above example would allow 300 requests/hour/token and would first try to
 identify the client by JWT Bearer token before falling back to
 (Throttle default) IP address based identification.
 
-\
 **Using the Middleware**
 
 **Note:** This requires Cakephp version 3.4 or greater.  
 
 Include the middleware in inside of the Application.php:
 ```php
-use Muffin\Throttle\Middlware\ThrottleMiddleware.php;
+use Muffin\Throttle\Middlware\ThrottleMiddleware;
 ```
 
 Add the middleware to the stack and pass your custom configuration:
@@ -106,7 +105,7 @@ public function middleware($middleware)
         'message' => 'Rate limit exceeded',
         'interval' => '+1 hour',
         'limit' => 300,
-        'identifier' => function (Request $request) {
+        'identifier' => function (ServerRequestInterface $request) {
             if (null !== $request->header('Authorization')) {
                 return str_replace('Bearer ', '', $request->header('Authorization'));
             }
