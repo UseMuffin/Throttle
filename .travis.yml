@@ -29,8 +29,8 @@ before_script:
   - echo 'apc.enable_cli = 1' >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
 
 script:
-  - if [[ $DEFAULT = 1 && $TRAVIS_PHP_VERSION = 7.0 ]]; then phpunit --coverage-clover=clover.xml; fi
-  - if [[ $DEFAULT = 1 && $TRAVIS_PHP_VERSION != 7.0 ]]; then phpunit; fi
+  - if [[ $DEFAULT = 1 && $TRAVIS_PHP_VERSION = 7.0 ]]; then vendor/bin/phpunit --coverage-clover=clover.xml; fi
+  - if [[ $DEFAULT = 1 && $TRAVIS_PHP_VERSION != 7.0 ]]; then vendor/bin/phpunit; fi
 
   - if [[ $PHPCS = 1 ]]; then vendor/bin/phpcs -p --extensions=php --standard=vendor/cakephp/cakephp-codesniffer/CakePHP ./src ./tests; fi
 
