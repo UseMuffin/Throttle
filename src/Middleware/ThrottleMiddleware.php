@@ -3,7 +3,6 @@ namespace Muffin\Throttle\Middleware;
 
 use Cake\Cache\Cache;
 use Cake\Core\InstanceConfigTrait;
-use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Zend\Diactoros\Stream;
