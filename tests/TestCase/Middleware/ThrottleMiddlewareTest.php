@@ -1,15 +1,15 @@
 <?php
-namespace Muffin\Throttle\Test\TestCase\Routing\Filter;
+namespace Muffin\Throttle\Test\TestCase\Middleware;
 
 use Cake\Cache\Cache;
-use Cake\Event\Event;
-use Cake\Network\Request;
-use Cake\Network\Response;
+use Cake\Core\Configure;
+use Cake\Http\Response;
+use Cake\Http\ServerRequest;
 use Cake\TestSuite\TestCase;
-use Muffin\Throttle\Routing\Filter\ThrottleFilter;
+use Muffin\Throttle\Middleware\ThrottleMiddleware;
 use StdClass;
 
-class ThrottleFilterTest extends TestCase
+class ThrottleMiddlewareTest extends TestCase
 {
     /**
      * setUp method
@@ -20,16 +20,20 @@ class ThrottleFilterTest extends TestCase
     {
         parent::setUp();
 
+        $this->skipIf(version_compare(Configure::version(), '3.4') == -1 ? true : false);
         $this->skipIf(!function_exists('apcu_store'), 'APCu is not installed or configured properly.');
         if ((PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg')) {
             $this->skipIf(!ini_get('apc.enable_cli'), 'APC is not enabled for the CLI.');
         }
     }
 
+    /**
+     * Test __construct
+     */
     public function testConstructor()
     {
-        $filter = new ThrottleFilter();
-        $result = $filter->config();
+        $middleware = new ThrottleMiddleware();
+        $result = $middleware->getConfig();
 
         $this->assertEquals('Rate limit exceeded', $result['message']);
         $this->assertEquals('+1 minute', $result['interval']);
@@ -45,61 +49,57 @@ class ThrottleFilterTest extends TestCase
     }
 
     /**
-     * Test beforeDispatch
+     * Test __invoke
      */
-    public function testBeforeDispatch()
+    public function testInvoke()
     {
         Cache::drop('throttle');
-        Cache::config('throttle', [
+        Cache::setConfig('throttle', [
             'className' => 'Cake\Cache\Engine\ApcEngine',
             'prefix' => 'throttle_'
         ]);
 
-        $filter = new ThrottleFilter([
+        $middleware = new ThrottleMiddleware([
             'limit' => 1
         ]);
+
         $response = new Response();
-        $request = new Request([
+        $request = new ServerRequest([
             'environment' => [
-                'REMOTE_ADDR' => '192.168.1.2'
+                'REMOTE_ADDR' => '192.168.1.33'
             ]
         ]);
 
-        $event = new Event('Dispatcher.beforeDispatch', $this, compact('request', 'response'));
-        $this->assertNull($filter->beforeDispatch($event));
-        $this->assertFalse($event->isStopped());
+        $result = $middleware(
+            $request,
+            $response,
+            function ($request, $response) {
+                return $response;
+            }
+        );
 
-        $result = $filter->beforeDispatch($event);
-        $this->assertInstanceOf('Cake\Network\Response', $result);
-        $this->assertEquals(429, $result->statusCode());
-        $this->assertTrue($event->isStopped());
+        $expectedHeaders = [
+            'X-RateLimit-Limit',
+            'X-RateLimit-Remaining',
+            'X-RateLimit-Reset'
+        ];
+
+        $this->assertInstanceOf('Cake\Http\Response', $result);
+        $this->assertEquals(200, $result->getStatusCode());
+        $this->assertEquals(3, count(array_intersect($expectedHeaders, array_keys($result->getHeaders()))));
+
+        $result = $middleware(
+            $request,
+            $response,
+            function ($request, $response) {
+                return $response;
+            }
+        );
+
+        $this->assertInstanceOf('Cake\Http\Response', $result);
+        $this->assertEquals(429, $result->getStatusCode());
     }
 
-    /**
-     * Test afterDispatch
-     */
-    public function testAfterDispatch()
-    {
-        Cache::drop('throttle');
-        Cache::config('throttle', [
-            'className' => 'Cake\Cache\Engine\ApcEngine',
-            'prefix' => 'throttle_'
-        ]);
-
-        $filter = new ThrottleFilter([
-            'limit' => 1
-        ]);
-        $response = new Response();
-        $request = new Request([
-            'environment' => [
-                'HTTP_CLIENT_IP' => '192.168.1.2'
-            ]
-        ]);
-
-        $event = new Event('Dispatcher.beforeDispatch', $this, compact('request', 'response'));
-        $result = $filter->afterDispatch($event);
-        $this->assertInstanceOf('Cake\Network\Response', $result);
-    }
     /**
      * Using the File Storage cache engine should throw a LogicException.
      *
@@ -107,14 +107,14 @@ class ThrottleFilterTest extends TestCase
      */
     public function testFileCacheException()
     {
-        Cache::config('file', [
+        Cache::setConfig('file', [
             'className' => 'Cake\Cache\Engine\FileEngine',
             'prefix' => 'throttle_'
         ]);
 
-        $filter = new ThrottleFilter();
-        $reflection = $this->getReflection($filter, '_touch');
-        $reflection->method->invokeArgs($filter, [new Request()]);
+        $middleware = new ThrottleMiddleware();
+        $reflection = $this->getReflection($middleware, '_touch');
+        $reflection->method->invokeArgs($middleware, [new ServerRequest()]);
     }
 
     /**
@@ -124,20 +124,20 @@ class ThrottleFilterTest extends TestCase
      */
     public function testSetIdentifierMethod()
     {
-        $filter = new ThrottleFilter();
-        $reflection = $this->getReflection($filter, '_setIdentifier');
+        $middleware = new ThrottleMiddleware();
+        $reflection = $this->getReflection($middleware, '_setIdentifier');
 
-        $request = new Request();
+        $request = new ServerRequest();
         $expected = $request->clientIp();
-        $result = $reflection->method->invokeArgs($filter, [new Request()]);
+        $result = $reflection->method->invokeArgs($middleware, [new ServerRequest()]);
         $this->assertEquals($expected, $result);
 
         // should throw an exception if identifier is not a callable
-        $filter = new ThrottleFilter([
+        $middleware = new ThrottleMiddleware([
             'identifier' => 'non-callable-string'
         ]);
-        $reflection = $this->getReflection($filter, '_setIdentifier');
-        $reflection->method->invokeArgs($filter, [new Request()]);
+        $reflection = $this->getReflection($middleware, '_setIdentifier');
+        $reflection->method->invokeArgs($middleware, [new ServerRequest()]);
     }
 
     /**
@@ -146,24 +146,27 @@ class ThrottleFilterTest extends TestCase
     public function testInitCacheMethod()
     {
         Cache::drop('default');
-        Cache::config('default', [
-             'className' => 'Cake\Cache\Engine\FileEngine'
+        Cache::setConfig('default', [
+            'className' => 'Cake\Cache\Engine\FileEngine'
         ]);
 
         // test if new cache config is created if it does not exist
         Cache::drop('throttle');
-        $filter = new ThrottleFilter();
-        $reflection = $this->getReflection($filter, '_initCache');
-        $reflection->method->invokeArgs($filter, []);
+
+        $middleware = new ThrottleMiddleware();
+        $reflection = $this->getReflection($middleware, '_initCache');
+        $reflection->method->invokeArgs($middleware, []);
+
         $expected = [
             'className' => 'File',
             'prefix' => 'throttle_',
             'duration' => '+1 minute'
         ];
-        $this->assertEquals($expected, Cache::config('throttle'));
+
+        $this->assertEquals($expected, Cache::getConfig('throttle'));
 
         // cache config creation should be skipped if it already exists
-        $this->assertNull($reflection->method->invokeArgs($filter, []));
+        $this->assertNull($reflection->method->invokeArgs($middleware, []));
     }
 
     /**
@@ -172,25 +175,26 @@ class ThrottleFilterTest extends TestCase
      */
     public function testGetDefaultCacheConfigClassNameMethod()
     {
-        $filter = new ThrottleFilter();
-        $reflection = $this->getReflection($filter, '_getDefaultCacheConfigClassName');
+        $middleware = new ThrottleMiddleware();
+        $reflection = $this->getReflection($middleware, '_getDefaultCacheConfigClassName');
 
         // Make sure short cache engine names get resolved properly
         Cache::drop('default');
-        Cache::config('default', [
+        Cache::setConfig('default', [
             'className' => 'File'
         ]);
+
         $expected = 'File';
-        $result = $reflection->method->invokeArgs($filter, [new Request()]);
+        $result = $reflection->method->invokeArgs($middleware, [new ServerRequest()]);
         $this->assertEquals($expected, $result);
 
         // Make sure fully namespaced cache engine names get resolved properly
         Cache::drop('default');
-        Cache::config('default', [
+        Cache::setConfig('default', [
             'className' => 'Cake\Cache\Engine\FileEngine'
         ]);
         $expected = 'File';
-        $result = $reflection->method->invokeArgs($filter, [new Request()]);
+        $result = $reflection->method->invokeArgs($middleware, [new ServerRequest()]);
         $this->assertEquals($expected, $result);
     }
 
@@ -200,23 +204,23 @@ class ThrottleFilterTest extends TestCase
     public function testTouchMethod()
     {
         Cache::drop('throttle');
-        Cache::config('throttle', [
+        Cache::setConfig('throttle', [
             'className' => 'Cake\Cache\Engine\ApcEngine',
             'prefix' => 'throttle_'
         ]);
 
-        $filter = new ThrottleFilter();
-        $reflection = $this->getReflection($filter, '_touch', '_identifier');
-        $reflection->property->setValue($filter, 'test-identifier');
+        $middleware = new ThrottleMiddleware();
+        $reflection = $this->getReflection($middleware, '_touch', '_identifier');
+        $reflection->property->setValue($middleware, 'test-identifier');
 
         // initial hit should create cache count 1 + expiration key with epoch
-        $reflection->method->invokeArgs($filter, []);
+        $reflection->method->invokeArgs($middleware, []);
         $this->assertEquals(1, Cache::read('test-identifier', 'throttle'));
         $this->assertNotFalse(Cache::read('test-identifier_expires', 'throttle'));
         $expires = Cache::read('test-identifier_expires', 'throttle');
 
         // second hit should increase counter but have identical expires key
-        $reflection->method->invokeArgs($filter, []);
+        $reflection->method->invokeArgs($middleware, []);
         $this->assertEquals(2, Cache::read('test-identifier', 'throttle'));
         $this->assertEquals($expires, Cache::read('test-identifier_expires', 'throttle'));
 
@@ -229,19 +233,19 @@ class ThrottleFilterTest extends TestCase
      */
     public function testGetCacheExpirationKeyMethod()
     {
-        $filter = new ThrottleFilter();
-        $reflection = $this->getReflection($filter, '_getCacheExpirationKey', '_identifier');
+        $middelware = new ThrottleMiddleware();
+        $reflection = $this->getReflection($middelware, '_getCacheExpirationKey', '_identifier');
 
         // test ip-adress based expiration key (Throttle default)
-        $reflection->property->setValue($filter, '10.33.10.10');
+        $reflection->property->setValue($middelware, '10.33.10.10');
         $expected = '10.33.10.10_expires';
-        $result = $reflection->method->invokeArgs($filter, []);
+        $result = $reflection->method->invokeArgs($middelware, []);
         $this->assertEquals($expected, $result);
 
         // test long JWT Bearer Token based expiration key
-        $reflection->property->setValue($filter, 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6IjJiMzdhMzVhLTAxNWEtNGUzMi04YTUyLTYzZjQ3ODBkNjY1NCIsImV4cCI6MTQzOTAzMjQ5OH0.U6PkSf6IfSc-o-14UiGy4Rbr9kqqETCKOclf92PXwHY');
+        $reflection->property->setValue($middelware, 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6IjJiMzdhMzVhLTAxNWEtNGUzMi04YTUyLTYzZjQ3ODBkNjY1NCIsImV4cCI6MTQzOTAzMjQ5OH0.U6PkSf6IfSc-o-14UiGy4Rbr9kqqETCKOclf92PXwHY');
         $expected = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6IjJiMzdhMzVhLTAxNWEtNGUzMi04YTUyLTYzZjQ3ODBkNjY1NCIsImV4cCI6MTQzOTAzMjQ5OH0.U6PkSf6IfSc-o-14UiGy4Rbr9kqqETCKOclf92PXwHY_expires';
-        $result = $reflection->method->invokeArgs($filter, []);
+        $result = $reflection->method->invokeArgs($middelware, []);
         $this->assertEquals($expected, $result);
     }
 
@@ -251,12 +255,12 @@ class ThrottleFilterTest extends TestCase
     public function testSetHeadersMethod()
     {
         // test disabled headers, should return null
-        $filter = new ThrottleFilter([
+        $middleware = new ThrottleMiddleware([
             'headers' => false
         ]);
-        $reflection = $this->getReflection($filter, '_setHeaders');
-        $result = $reflection->method->invokeArgs($filter, [new Response()]);
-        $this->assertInstanceOf('Cake\Network\Response', $result);
+        $reflection = $this->getReflection($middleware, '_setHeaders');
+        $result = $reflection->method->invokeArgs($middleware, [new Response()]);
+        $this->assertInstanceOf('Cake\Http\Response', $result);
     }
 
     /**
@@ -264,23 +268,23 @@ class ThrottleFilterTest extends TestCase
      */
     public function testRemainingConnectionsMethod()
     {
-        $filter = new ThrottleFilter();
-        $reflection = $this->getReflection($filter, '_getRemainingConnections', '_count');
+        $middleware = new ThrottleMiddleware();
+        $reflection = $this->getReflection($middleware, '_getRemainingConnections', '_count');
 
-        $reflection->property->setValue($filter, 7);
-        $result = $reflection->method->invokeArgs($filter, []);
+        $reflection->property->setValue($middleware, 7);
+        $result = $reflection->method->invokeArgs($middleware, []);
         $this->assertEquals('3', $result);
 
-        $reflection->property->setValue($filter, 0);
-        $result = $reflection->method->invokeArgs($filter, []);
+        $reflection->property->setValue($middleware, 0);
+        $result = $reflection->method->invokeArgs($middleware, []);
         $this->assertEquals('10', $result);
 
-        $reflection->property->setValue($filter, 10);
-        $result = $reflection->method->invokeArgs($filter, []);
+        $reflection->property->setValue($middleware, 10);
+        $result = $reflection->method->invokeArgs($middleware, []);
         $this->assertEquals('0', $result);
 
-        $reflection->property->setValue($filter, 11);
-        $result = $reflection->method->invokeArgs($filter, []);
+        $reflection->property->setValue($middleware, 11);
+        $result = $reflection->method->invokeArgs($middleware, []);
         $this->assertEquals('0', $result);
     }
 
