@@ -288,7 +288,7 @@ class ThrottleFilterTest extends TestCase
      * Convenience function to return an object with reflection class, accessible
      * protected method and optional accessible protected property.
      */
-    public function getReflection($object, $method = false, $property = false)
+    protected function getReflection($object, $method = false, $property = false)
     {
         $obj = new stdClass();
         $obj->class = new \ReflectionClass(get_class($object));
