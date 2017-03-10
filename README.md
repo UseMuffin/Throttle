@@ -47,8 +47,6 @@ with required config. For e.g.:
 **Note:** This plugin will **NOT** work when using the `File` cache engine as it
 does not support atomic increment.
 
-\
-\
 **Using the Dispatch Filter**
 
 In `bootstrap.php`:
