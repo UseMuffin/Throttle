@@ -54,7 +54,7 @@ does not support atomic increment.
 Include the middleware in inside of the Application.php:
 
 ```php
-use Muffin\Throttle\Middlware\ThrottleMiddleware;
+use Muffin\Throttle\Middleware\ThrottleMiddleware;
 ```
 
 Add the middleware to the stack and pass your custom configuration:
