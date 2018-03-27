@@ -35,10 +35,10 @@ class ThrottleMiddlewareTest extends TestCase
         $middleware = new ThrottleMiddleware();
         $result = $middleware->getConfig();
 
-        $this->assertEquals('Rate limit exceeded', $result['message']);
+        $this->assertEquals('Rate limit exceeded', $result['response']['message']);
+        $this->assertEquals([], $result['response']['headers']);
         $this->assertEquals('+1 minute', $result['interval']);
         $this->assertEquals(10, $result['limit']);
-        $this->assertEquals('text/html', $result['type']);
         $this->assertTrue(is_callable($result['identifier']));
 
         $expectedHeaders = [
@@ -61,7 +61,13 @@ class ThrottleMiddlewareTest extends TestCase
         ]);
 
         $middleware = new ThrottleMiddleware([
-            'limit' => 1
+            'limit' => 1,
+            'response' => [
+                'headers' => [
+                    'body' => 'Rate limit exceeded',
+                    'Content-Type' => 'application/json'
+                ]
+            ]
         ]);
 
         $response = new Response();
@@ -98,6 +104,7 @@ class ThrottleMiddlewareTest extends TestCase
         );
 
         $this->assertInstanceOf('Cake\Http\Response', $result);
+        $this->assertContains('Content-Type: application/json', $result->getHeaders());
         $this->assertEquals(429, $result->getStatusCode());
     }
 

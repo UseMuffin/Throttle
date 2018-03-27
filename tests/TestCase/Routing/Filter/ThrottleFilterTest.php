@@ -31,10 +31,10 @@ class ThrottleFilterTest extends TestCase
         $filter = new ThrottleFilter();
         $result = $filter->config();
 
-        $this->assertEquals('Rate limit exceeded', $result['message']);
+        $this->assertEquals('Rate limit exceeded', $result['response']['body']);
+        $this->assertEquals([], $result['response']['headers']);
         $this->assertEquals('+1 minute', $result['interval']);
         $this->assertEquals(10, $result['limit']);
-        $this->assertEquals('text/html', $result['type']);
         $this->assertTrue(is_callable($result['identifier']));
 
         $expectedHeaders = [
@@ -57,7 +57,13 @@ class ThrottleFilterTest extends TestCase
         ]);
 
         $filter = new ThrottleFilter([
-            'limit' => 1
+            'limit' => 1,
+            'response' => [
+                'headers' => [
+                    'body' => 'Rate limit exceeded',
+                    'Content-Type' => 'application/json'
+                ]
+            ]
         ]);
         $response = new Response();
         $request = new Request([
@@ -73,6 +79,7 @@ class ThrottleFilterTest extends TestCase
         $result = $filter->beforeDispatch($event);
         $this->assertInstanceOf('Cake\Network\Response', $result);
         $this->assertEquals(429, $result->statusCode());
+        $this->assertContains('Content-Type: application/json', $result->headers());
         $this->assertTrue($event->isStopped());
     }
 
