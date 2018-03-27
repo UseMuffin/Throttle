@@ -37,7 +37,7 @@
         "source": "https://github.com/usemuffin/throttle"
     },
     "require": {
-        "cakephp/cakephp": "^3.6@RC"
+        "cakephp/cakephp": "^3.4"
     },
     "require-dev": {
         "cakephp/cakephp-codesniffer": "^3.0",
@@ -52,5 +52,6 @@
         "psr-4": {
             "Muffin\\Throttle\\Test\\": "tests"
         }
-    }
+    },
+    "minimum-stability": "RC"
 }
