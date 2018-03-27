@@ -110,6 +110,18 @@ your configuration array:
 
 To disable the headers set `headers` key to `false`.
 
+### Response type
+
+You may use a `type` key in your configuration array (as you would do with a `Response` object) if you want to return a message in a different format as the default one :
+
+```php
+new ThrottleMiddleware([
+    'type' => 'json',
+    'message' => json_encode(['error' => 'Rate limit exceeded']),
+    'limit' => 300
+]);
+```
+
 ### Using the Dispatch Filter
 
 In `bootstrap.php`:
