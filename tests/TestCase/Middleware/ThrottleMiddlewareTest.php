@@ -38,6 +38,7 @@ class ThrottleMiddlewareTest extends TestCase
         $this->assertEquals('Rate limit exceeded', $result['message']);
         $this->assertEquals('+1 minute', $result['interval']);
         $this->assertEquals(10, $result['limit']);
+        $this->assertEquals('text/html', $result['type']);
         $this->assertTrue(is_callable($result['identifier']));
 
         $expectedHeaders = [
