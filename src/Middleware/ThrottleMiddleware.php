@@ -51,6 +51,7 @@ class ThrottleMiddleware
             $stream->write((string)$this->getConfig('message'));
 
             return $response->withStatus(429)
+                ->withType($this->getConfig('type'))
                 ->withBody($stream);
         }
 

@@ -16,6 +16,7 @@ trait ThrottleTrait
         'message' => 'Rate limit exceeded',
         'interval' => '+1 minute',
         'limit' => 10,
+        'type' => 'text/html',
         'headers' => [
             'limit' => 'X-RateLimit-Limit',
             'remaining' => 'X-RateLimit-Remaining',
