@@ -46,12 +46,24 @@ class ThrottleMiddleware
         $this->_initCache();
         $this->_count = $this->_touch();
 
-        if ($this->_count > $this->getConfig('limit')) {
+        $config = $this->getConfig();
+
+        if ($this->_count > $config['limit']) {
             $stream = new Stream('php://memory', 'wb+');
-            $stream->write((string)$this->getConfig('message'));
+
+            if (is_array($config['response']['headers'])) {
+                foreach ($config['response']['headers'] as $key => $value) {
+                    $response = $response->withHeader($key, $value);
+                }
+            }
+
+            $stream->write((string)$config['response']['body']);
+
+            if (isset($config['message'])) {
+                $stream->write((string)$config['message']);
+            }
 
             return $response->withStatus(429)
-                ->withType($this->getConfig('type'))
                 ->withBody($stream);
         }
 

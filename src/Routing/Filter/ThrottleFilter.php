@@ -46,10 +46,15 @@ class ThrottleFilter extends DispatcherFilter
 
         // client has reached rate limit
         $event->stopPropagation();
-        $response = new Response(['body' => $this->config('message')]);
-        $response->type($this->config('type'));
+        $response = new Response(['body' => (null !== $this->config('message') ? $this->config('message') : $this->config('response')['body'])]);
         $response->httpCodes([429 => 'Too Many Requests']);
         $response->statusCode(429);
+
+        if (is_array($this->config('response')['headers'])) {
+            foreach ($this->config('response')['headers'] as $key => $value) {
+                $response->header($key, $value);
+            }
+        }
 
         return $response;
     }
