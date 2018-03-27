@@ -37,10 +37,10 @@
         "source": "https://github.com/usemuffin/throttle"
     },
     "require": {
-        "cakephp/cakephp": "~3.0"
+        "cakephp/cakephp": "^3.6@RC"
     },
     "require-dev": {
-        "cakephp/cakephp-codesniffer": "2.*",
+        "cakephp/cakephp-codesniffer": "^3.0",
         "phpunit/phpunit": "<6.0"
     },
     "autoload": {

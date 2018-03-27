@@ -2,7 +2,7 @@
 namespace Muffin\Throttle\Test\TestCase\Middleware;
 
 use Cake\Cache\Cache;
-use Cake\Core\Configure;
+use Cake\Cache\Engine\ApcuEngine;
 use Cake\Http\Response;
 use Cake\Http\ServerRequest;
 use Cake\TestSuite\TestCase;
@@ -20,7 +20,6 @@ class ThrottleMiddlewareTest extends TestCase
     {
         parent::setUp();
 
-        $this->skipIf(version_compare(Configure::version(), '3.4') == -1 ? true : false);
         $this->skipIf(!function_exists('apcu_store'), 'APCu is not installed or configured properly.');
         if ((PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg')) {
             $this->skipIf(!ini_get('apc.enable_cli'), 'APC is not enabled for the CLI.');
@@ -55,7 +54,7 @@ class ThrottleMiddlewareTest extends TestCase
     {
         Cache::drop('throttle');
         Cache::setConfig('throttle', [
-            'className' => 'Cake\Cache\Engine\ApcEngine',
+            'className' => ApcuEngine::class,
             'prefix' => 'throttle_'
         ]);
 
@@ -205,7 +204,7 @@ class ThrottleMiddlewareTest extends TestCase
     {
         Cache::drop('throttle');
         Cache::setConfig('throttle', [
-            'className' => 'Cake\Cache\Engine\ApcEngine',
+            'className' => ApcuEngine::class,
             'prefix' => 'throttle_'
         ]);
 
