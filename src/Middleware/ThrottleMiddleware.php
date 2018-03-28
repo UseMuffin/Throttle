@@ -48,8 +48,6 @@ class ThrottleMiddleware
         $config = $this->getConfig();
 
         if ($this->_count > $config['limit']) {
-            $stream = new Stream('php://memory', 'wb+');
-
             if (is_array($config['response']['headers'])) {
                 foreach ($config['response']['headers'] as $name => $value) {
                     $response = $response->withHeader($name, $value);
@@ -57,14 +55,14 @@ class ThrottleMiddleware
             }
 
             if (isset($config['message'])) {
-                $stream->write((string)$config['message']);
+                $message = $config['message'];
             } else {
-                $stream->write((string)$config['response']['body']);
+                $message = $config['response']['body'];
             }
 
             return $response->withStatus(429)
                 ->withType($config['response']['type'])
-                ->withBody($stream);
+                ->withStringBody($message);
         }
 
         $response = $next($request, $response);
