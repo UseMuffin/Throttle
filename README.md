@@ -17,7 +17,7 @@ app in a given time frame.
 
 ## Installation
 
-```
+```bash
 composer require muffin/throttle
 ```
 To make your application load the plugin either run:
@@ -26,7 +26,7 @@ To make your application load the plugin either run:
 ./bin/cake plugin load Muffin/Throttle
 ```
 
-or add the following line to ``config/bootstrap.php``:
+or add the following line to `config/bootstrap.php`:
 
 ```php
 Plugin::load('Muffin/Throttle');
@@ -65,7 +65,9 @@ public function middleware($middleware)
     // Various other middlewares for error handling, routing etc. added here.
 
     $throttleMiddleware = new ThrottleMiddleware([
-        'message' => 'Rate limit exceeded',
+        'response' => [
+            'body' => 'Rate limit exceeded'
+        ],
         'interval' => '+1 hour',
         'limit' => 300,
         'identifier' => function (ServerRequestInterface $request) {
@@ -110,14 +112,19 @@ your configuration array:
 
 To disable the headers set `headers` key to `false`.
 
-### Response type
+### Customize response object
 
-You may use a `type` key in your configuration array (as you would do with a `Response` object) if you want to return a message in a different format as the default one :
+You may use `type` and `headers` subkeys of the `response` array (as you would do with a `Response` object) if you want to return a different message as the default one:
 
 ```php
 new ThrottleMiddleware([
-    'type' => 'json',
-    'message' => json_encode(['error' => 'Rate limit exceeded']),
+    'response' => [
+        'body' => json_encode(['error' => 'Rate limit exceeded']),
+        'type' => 'json',
+        'headers' => [
+            'Custom-Header' => 'custom_value'
+        ]
+    ],
     'limit' => 300
 ]);
 ```
@@ -143,7 +150,9 @@ easily change that by passing your own configuration:
 
 ```php
 DispatcherFactory::add('Muffin/Throttle.Throttle', [
-    'message' => 'Rate limit exceeded',
+    'response' => [
+        'body' => 'Rate limit exceeded'
+    ],
     'interval' => '+1 hour',
     'limit' => 300,
     'identifier' => function (Request $request) {
