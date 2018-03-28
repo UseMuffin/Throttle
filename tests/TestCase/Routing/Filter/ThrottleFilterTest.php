@@ -84,8 +84,8 @@ class ThrottleFilterTest extends TestCase
         $this->assertTrue($event->isStopped());
 
         $expectedHeaders = [
-            'Custom-Header',
-            'Content-Type'
+            'Content-Type',
+            'Custom-Header'
         ];
         $this->assertEquals($expectedHeaders, array_keys($result->header()));
     }
