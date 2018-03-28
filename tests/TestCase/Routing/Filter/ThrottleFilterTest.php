@@ -97,7 +97,7 @@ class ThrottleFilterTest extends TestCase
             'Content-Type',
             'Custom-Header'
         ];
-        $this->assertEquals($expectedHeaders, array_keys($result->header()));
+        $this->assertEquals($expectedHeaders, array_keys($result->getHeaders()));
     }
 
     /**

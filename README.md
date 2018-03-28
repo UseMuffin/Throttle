@@ -71,8 +71,8 @@ public function middleware($middleware)
         'interval' => '+1 hour',
         'limit' => 300,
         'identifier' => function (ServerRequestInterface $request) {
-            if (null !== $request->header('Authorization')) {
-                return str_replace('Bearer ', '', $request->header('Authorization'));
+            if (null !== $request->getHeaderLine('Authorization')) {
+                return str_replace('Bearer ', '', $request->getHeaderLine('Authorization'));
             }
             return $request->clientIp();
         }
@@ -156,8 +156,8 @@ DispatcherFactory::add('Muffin/Throttle.Throttle', [
     'interval' => '+1 hour',
     'limit' => 300,
     'identifier' => function (Request $request) {
-        if (null !== $request->header('Authorization')) {
-            return str_replace('Bearer ', '', $request->header('Authorization'));
+        if (null !== $request->getHeaderLine('Authorization')) {
+            return str_replace('Bearer ', '', $request->getHeaderLine('Authorization'));
         }
         return $request->clientIp();
     }

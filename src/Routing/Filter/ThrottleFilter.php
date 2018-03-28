@@ -60,7 +60,7 @@ class ThrottleFilter extends DispatcherFilter
 
         if (is_array($config['response']['headers'])) {
             foreach ($config['response']['headers'] as $name => $value) {
-                $response->header($name, $value);
+                $response = $response->withHeader($name, $value);
             }
         }
 
