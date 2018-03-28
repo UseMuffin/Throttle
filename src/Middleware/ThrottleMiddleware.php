@@ -1,7 +1,6 @@
 <?php
 namespace Muffin\Throttle\Middleware;
 
-use Cake\Cache\Cache;
 use Cake\Core\InstanceConfigTrait;
 use Muffin\Throttle\ThrottleTrait;
 use Psr\Http\Message\ResponseInterface;

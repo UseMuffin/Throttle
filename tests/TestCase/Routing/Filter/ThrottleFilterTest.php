@@ -2,15 +2,19 @@
 namespace Muffin\Throttle\Test\TestCase\Routing\Filter;
 
 use Cake\Cache\Cache;
+use Cake\Cache\Engine\ApcEngine;
+use Cake\Cache\Engine\ApcuEngine;
 use Cake\Event\Event;
-use Cake\Network\Request;
-use Cake\Network\Response;
+use Cake\Http\Response;
+use Cake\Http\ServerRequest;
 use Cake\TestSuite\TestCase;
 use Muffin\Throttle\Routing\Filter\ThrottleFilter;
 use StdClass;
 
 class ThrottleFilterTest extends TestCase
 {
+    protected $engineClass;
+
     /**
      * setUp method
      *
@@ -24,12 +28,18 @@ class ThrottleFilterTest extends TestCase
         if ((PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg')) {
             $this->skipIf(!ini_get('apc.enable_cli'), 'APC is not enabled for the CLI.');
         }
+
+        if (class_exists(ApcuEngine::class)) {
+            $this->engineClass = ApcuEngine::class;
+        } else {
+            $this->engineClass = ApcEngine::class;
+        }
     }
 
     public function testConstructor()
     {
         $filter = new ThrottleFilter();
-        $result = $filter->config();
+        $result = $filter->getConfig();
 
         $this->assertEquals('Rate limit exceeded', $result['response']['body']);
         $this->assertEquals([], $result['response']['headers']);
@@ -51,8 +61,8 @@ class ThrottleFilterTest extends TestCase
     public function testBeforeDispatch()
     {
         Cache::drop('throttle');
-        Cache::config('throttle', [
-            'className' => 'Cake\Cache\Engine\ApcEngine',
+        Cache::setConfig('throttle', [
+            'className' => $this->engineClass,
             'prefix' => 'throttle_'
         ]);
 
@@ -67,7 +77,7 @@ class ThrottleFilterTest extends TestCase
             ]
         ]);
         $response = new Response();
-        $request = new Request([
+        $request = new ServerRequest([
             'environment' => [
                 'REMOTE_ADDR' => '192.168.1.2'
             ]
@@ -78,9 +88,9 @@ class ThrottleFilterTest extends TestCase
         $this->assertFalse($event->isStopped());
 
         $result = $filter->beforeDispatch($event);
-        $this->assertInstanceOf('Cake\Network\Response', $result);
-        $this->assertEquals(429, $result->statusCode());
-        $this->assertEquals('application/json', $result->type());
+        $this->assertInstanceOf(Response::class, $result);
+        $this->assertEquals(429, $result->getStatusCode());
+        $this->assertEquals('application/json', $result->getType());
         $this->assertTrue($event->isStopped());
 
         $expectedHeaders = [
@@ -96,8 +106,8 @@ class ThrottleFilterTest extends TestCase
     public function testAfterDispatch()
     {
         Cache::drop('throttle');
-        Cache::config('throttle', [
-            'className' => 'Cake\Cache\Engine\ApcEngine',
+        Cache::setConfig('throttle', [
+            'className' => $this->engineClass,
             'prefix' => 'throttle_'
         ]);
 
@@ -105,7 +115,7 @@ class ThrottleFilterTest extends TestCase
             'limit' => 1
         ]);
         $response = new Response();
-        $request = new Request([
+        $request = new ServerRequest([
             'environment' => [
                 'HTTP_CLIENT_IP' => '192.168.1.2'
             ]
@@ -113,8 +123,9 @@ class ThrottleFilterTest extends TestCase
 
         $event = new Event('Dispatcher.beforeDispatch', $this, compact('request', 'response'));
         $result = $filter->afterDispatch($event);
-        $this->assertInstanceOf('Cake\Network\Response', $result);
+        $this->assertInstanceOf(Response::class, $result);
     }
+
     /**
      * Using the File Storage cache engine should throw a LogicException.
      *
@@ -122,14 +133,14 @@ class ThrottleFilterTest extends TestCase
      */
     public function testFileCacheException()
     {
-        Cache::config('file', [
+        Cache::setConfig('file', [
             'className' => 'Cake\Cache\Engine\FileEngine',
             'prefix' => 'throttle_'
         ]);
 
         $filter = new ThrottleFilter();
         $reflection = $this->getReflection($filter, '_touch');
-        $reflection->method->invokeArgs($filter, [new Request()]);
+        $reflection->method->invokeArgs($filter, [new ServerRequest()]);
     }
 
     /**
@@ -142,9 +153,9 @@ class ThrottleFilterTest extends TestCase
         $filter = new ThrottleFilter();
         $reflection = $this->getReflection($filter, '_setIdentifier');
 
-        $request = new Request();
+        $request = new ServerRequest();
         $expected = $request->clientIp();
-        $result = $reflection->method->invokeArgs($filter, [new Request()]);
+        $result = $reflection->method->invokeArgs($filter, [new ServerRequest()]);
         $this->assertEquals($expected, $result);
 
         // should throw an exception if identifier is not a callable
@@ -152,7 +163,7 @@ class ThrottleFilterTest extends TestCase
             'identifier' => 'non-callable-string'
         ]);
         $reflection = $this->getReflection($filter, '_setIdentifier');
-        $reflection->method->invokeArgs($filter, [new Request()]);
+        $reflection->method->invokeArgs($filter, [new ServerRequest()]);
     }
 
     /**
@@ -161,8 +172,8 @@ class ThrottleFilterTest extends TestCase
     public function testInitCacheMethod()
     {
         Cache::drop('default');
-        Cache::config('default', [
-             'className' => 'Cake\Cache\Engine\FileEngine'
+        Cache::setConfig('default', [
+            'className' => 'Cake\Cache\Engine\FileEngine'
         ]);
 
         // test if new cache config is created if it does not exist
@@ -175,7 +186,7 @@ class ThrottleFilterTest extends TestCase
             'prefix' => 'throttle_',
             'duration' => '+1 minute'
         ];
-        $this->assertEquals($expected, Cache::config('throttle'));
+        $this->assertEquals($expected, Cache::getConfig('throttle'));
 
         // cache config creation should be skipped if it already exists
         $this->assertNull($reflection->method->invokeArgs($filter, []));
@@ -192,20 +203,20 @@ class ThrottleFilterTest extends TestCase
 
         // Make sure short cache engine names get resolved properly
         Cache::drop('default');
-        Cache::config('default', [
+        Cache::setConfig('default', [
             'className' => 'File'
         ]);
         $expected = 'File';
-        $result = $reflection->method->invokeArgs($filter, [new Request()]);
+        $result = $reflection->method->invokeArgs($filter, [new ServerRequest()]);
         $this->assertEquals($expected, $result);
 
         // Make sure fully namespaced cache engine names get resolved properly
         Cache::drop('default');
-        Cache::config('default', [
+        Cache::setConfig('default', [
             'className' => 'Cake\Cache\Engine\FileEngine'
         ]);
         $expected = 'File';
-        $result = $reflection->method->invokeArgs($filter, [new Request()]);
+        $result = $reflection->method->invokeArgs($filter, [new ServerRequest()]);
         $this->assertEquals($expected, $result);
     }
 
@@ -215,8 +226,8 @@ class ThrottleFilterTest extends TestCase
     public function testTouchMethod()
     {
         Cache::drop('throttle');
-        Cache::config('throttle', [
-            'className' => 'Cake\Cache\Engine\ApcEngine',
+        Cache::setConfig('throttle', [
+            'className' => $this->engineClass,
             'prefix' => 'throttle_'
         ]);
 
@@ -227,7 +238,7 @@ class ThrottleFilterTest extends TestCase
         // initial hit should create cache count 1 + expiration key with epoch
         $reflection->method->invokeArgs($filter, []);
         $this->assertEquals(1, Cache::read('test-identifier', 'throttle'));
-        $this->assertNotFalse(Cache::read('test-identifier_expires', 'throttle'));
+        $this->assertTrue((bool)Cache::read('test-identifier_expires', 'throttle'));
         $expires = Cache::read('test-identifier_expires', 'throttle');
 
         // second hit should increase counter but have identical expires key
@@ -271,7 +282,7 @@ class ThrottleFilterTest extends TestCase
         ]);
         $reflection = $this->getReflection($filter, '_setHeaders');
         $result = $reflection->method->invokeArgs($filter, [new Response()]);
-        $this->assertInstanceOf('Cake\Network\Response', $result);
+        $this->assertInstanceOf(Response::class, $result);
     }
 
     /**

@@ -2,7 +2,8 @@
 namespace Muffin\Throttle\Test\TestCase\Middleware;
 
 use Cake\Cache\Cache;
-use Cake\Core\Configure;
+use Cake\Cache\Engine\ApcEngine;
+use Cake\Cache\Engine\ApcuEngine;
 use Cake\Http\Response;
 use Cake\Http\ServerRequest;
 use Cake\TestSuite\TestCase;
@@ -11,6 +12,8 @@ use StdClass;
 
 class ThrottleMiddlewareTest extends TestCase
 {
+    protected $engineClass;
+
     /**
      * setUp method
      *
@@ -20,10 +23,15 @@ class ThrottleMiddlewareTest extends TestCase
     {
         parent::setUp();
 
-        $this->skipIf(version_compare(Configure::version(), '3.4') == -1 ? true : false);
         $this->skipIf(!function_exists('apcu_store'), 'APCu is not installed or configured properly.');
         if ((PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg')) {
             $this->skipIf(!ini_get('apc.enable_cli'), 'APC is not enabled for the CLI.');
+        }
+
+        if (class_exists(ApcuEngine::class)) {
+            $this->engineClass = ApcuEngine::class;
+        } else {
+            $this->engineClass = ApcEngine::class;
         }
     }
 
@@ -56,7 +64,7 @@ class ThrottleMiddlewareTest extends TestCase
     {
         Cache::drop('throttle');
         Cache::setConfig('throttle', [
-            'className' => 'Cake\Cache\Engine\ApcEngine',
+            'className' => $this->engineClass,
             'prefix' => 'throttle_'
         ]);
 
@@ -220,7 +228,7 @@ class ThrottleMiddlewareTest extends TestCase
     {
         Cache::drop('throttle');
         Cache::setConfig('throttle', [
-            'className' => 'Cake\Cache\Engine\ApcEngine',
+            'className' => $this->engineClass,
             'prefix' => 'throttle_'
         ]);
 
@@ -231,7 +239,7 @@ class ThrottleMiddlewareTest extends TestCase
         // initial hit should create cache count 1 + expiration key with epoch
         $reflection->method->invokeArgs($middleware, []);
         $this->assertEquals(1, Cache::read('test-identifier', 'throttle'));
-        $this->assertNotFalse(Cache::read('test-identifier_expires', 'throttle'));
+        $this->assertTrue((bool)Cache::read('test-identifier_expires', 'throttle'));
         $expires = Cache::read('test-identifier_expires', 'throttle');
 
         // second hit should increase counter but have identical expires key
