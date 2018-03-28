@@ -39,7 +39,7 @@ class ThrottleFilter extends DispatcherFilter
 
         // client has not exceeded rate limit
         if ($this->_count <= $config['limit']) {
-            $this->_setHeaders($event->getData()['response']);
+            $this->_setHeaders($event->getData('response'));
 
             return;
         }
