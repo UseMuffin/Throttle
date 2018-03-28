@@ -59,8 +59,8 @@ class ThrottleFilterTest extends TestCase
         $filter = new ThrottleFilter([
             'limit' => 1,
             'response' => [
+                'body' => 'Rate limit exceeded',
                 'headers' => [
-                    'body' => 'Rate limit exceeded',
                     'Content-Type' => 'application/json'
                 ]
             ]
