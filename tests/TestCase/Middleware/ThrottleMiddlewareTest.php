@@ -118,7 +118,11 @@ class ThrottleMiddlewareTest extends TestCase
         ];
 
         $this->assertInstanceOf('Cake\Http\Response', $result);
-        $this->assertEquals('application/json', $result->getType());
+        if (method_exists($result, 'getType')) {
+            $this->assertEquals('application/json', $result->getType());
+        } else {
+            $this->assertEquals('application/json', $result->type());
+        }
         $this->assertEquals(2, count(array_intersect($expectedHeaders, array_keys($result->getHeaders()))));
         $this->assertEquals(429, $result->getStatusCode());
     }

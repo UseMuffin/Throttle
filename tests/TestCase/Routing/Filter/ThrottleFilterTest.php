@@ -90,7 +90,11 @@ class ThrottleFilterTest extends TestCase
         $result = $filter->beforeDispatch($event);
         $this->assertInstanceOf(Response::class, $result);
         $this->assertEquals(429, $result->getStatusCode());
-        $this->assertEquals('application/json', $result->getType());
+        if (method_exists($result, 'getType')) {
+            $this->assertEquals('application/json', $result->getType());
+        } else {
+            $this->assertEquals('application/json', $result->type());
+        }
         $this->assertTrue($event->isStopped());
 
         $expectedHeaders = [
