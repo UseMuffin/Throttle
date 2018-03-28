@@ -17,7 +17,7 @@ app in a given time frame.
 
 ## Installation
 
-```
+```bash
 composer require muffin/throttle
 ```
 To make your application load the plugin either run:
@@ -26,7 +26,7 @@ To make your application load the plugin either run:
 ./bin/cake plugin load Muffin/Throttle
 ```
 
-or add the following line to ``config/bootstrap.php``:
+or add the following line to `config/bootstrap.php`:
 
 ```php
 Plugin::load('Muffin/Throttle');
@@ -65,12 +65,14 @@ public function middleware($middleware)
     // Various other middlewares for error handling, routing etc. added here.
 
     $throttleMiddleware = new ThrottleMiddleware([
-        'message' => 'Rate limit exceeded',
+        'response' => [
+            'body' => 'Rate limit exceeded'
+        ],
         'interval' => '+1 hour',
         'limit' => 300,
         'identifier' => function (ServerRequestInterface $request) {
-            if (null !== $request->header('Authorization')) {
-                return str_replace('Bearer ', '', $request->header('Authorization'));
+            if (null !== $request->getHeaderLine('Authorization')) {
+                return str_replace('Bearer ', '', $request->getHeaderLine('Authorization'));
             }
             return $request->clientIp();
         }
@@ -110,6 +112,23 @@ your configuration array:
 
 To disable the headers set `headers` key to `false`.
 
+### Customize response object
+
+You may use `type` and `headers` subkeys of the `response` array (as you would do with a `Response` object) if you want to return a different message as the default one:
+
+```php
+new ThrottleMiddleware([
+    'response' => [
+        'body' => json_encode(['error' => 'Rate limit exceeded']),
+        'type' => 'json',
+        'headers' => [
+            'Custom-Header' => 'custom_value'
+        ]
+    ],
+    'limit' => 300
+]);
+```
+
 ### Using the Dispatch Filter
 
 In `bootstrap.php`:
@@ -131,12 +150,14 @@ easily change that by passing your own configuration:
 
 ```php
 DispatcherFactory::add('Muffin/Throttle.Throttle', [
-    'message' => 'Rate limit exceeded',
+    'response' => [
+        'body' => 'Rate limit exceeded'
+    ],
     'interval' => '+1 hour',
     'limit' => 300,
     'identifier' => function (Request $request) {
-        if (null !== $request->header('Authorization')) {
-            return str_replace('Bearer ', '', $request->header('Authorization'));
+        if (null !== $request->getHeaderLine('Authorization')) {
+            return str_replace('Bearer ', '', $request->getHeaderLine('Authorization'));
         }
         return $request->clientIp();
     }

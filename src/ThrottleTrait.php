@@ -12,7 +12,11 @@ trait ThrottleTrait
      * @var array
      */
     protected $_throttleConfig = [
-        'message' => 'Rate limit exceeded',
+        'response' => [
+            'body' => 'Rate limit exceeded',
+            'type' => 'text/html',
+            'headers' => []
+        ],
         'interval' => '+1 minute',
         'limit' => 10,
         'headers' => [

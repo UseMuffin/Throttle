@@ -35,19 +35,34 @@ class ThrottleFilter extends DispatcherFilter
         $this->_initCache();
         $this->_count = $this->_touch();
 
+        $config = $this->getConfig();
+
         // client has not exceeded rate limit
-        if ($this->_count <= $this->getConfig('limit')) {
+        if ($this->_count <= $config['limit']) {
             $this->_setHeaders($event->getData('response'));
 
             return;
         }
 
+        if (isset($config['message'])) {
+            $message = $config['message'];
+        } else {
+            $message = $config['response']['body'];
+        }
+
         // client has reached rate limit
         $event->stopPropagation();
         $response = new Response([
-            'body' => $this->getConfig('message'),
+            'body' => $message,
             'status' => 429,
+            'type' => $config['response']['type']
         ]);
+
+        if (is_array($config['response']['headers'])) {
+            foreach ($config['response']['headers'] as $name => $value) {
+                $response = $response->withHeader($name, $value);
+            }
+        }
 
         return $response;
     }

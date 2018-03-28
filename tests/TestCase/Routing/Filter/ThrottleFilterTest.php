@@ -41,7 +41,8 @@ class ThrottleFilterTest extends TestCase
         $filter = new ThrottleFilter();
         $result = $filter->getConfig();
 
-        $this->assertEquals('Rate limit exceeded', $result['message']);
+        $this->assertEquals('Rate limit exceeded', $result['response']['body']);
+        $this->assertEquals([], $result['response']['headers']);
         $this->assertEquals('+1 minute', $result['interval']);
         $this->assertEquals(10, $result['limit']);
         $this->assertTrue(is_callable($result['identifier']));
@@ -66,7 +67,14 @@ class ThrottleFilterTest extends TestCase
         ]);
 
         $filter = new ThrottleFilter([
-            'limit' => 1
+            'limit' => 1,
+            'response' => [
+                'body' => 'Rate limit exceeded',
+                'type' => 'json',
+                'headers' => [
+                    'Custom-Header' => 'test/test'
+                ]
+            ]
         ]);
         $response = new Response();
         $request = new ServerRequest([
@@ -82,7 +90,14 @@ class ThrottleFilterTest extends TestCase
         $result = $filter->beforeDispatch($event);
         $this->assertInstanceOf(Response::class, $result);
         $this->assertEquals(429, $result->getStatusCode());
+        $this->assertEquals('application/json', $result->getType());
         $this->assertTrue($event->isStopped());
+
+        $expectedHeaders = [
+            'Content-Type',
+            'Custom-Header'
+        ];
+        $this->assertEquals($expectedHeaders, array_keys($result->getHeaders()));
     }
 
     /**
