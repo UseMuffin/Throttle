@@ -59,8 +59,7 @@ class ThrottleMiddleware
 
             if (isset($config['message'])) {
                 $stream->write((string)$config['message']);
-            }
-            else {
+            } else {
                 $stream->write((string)$config['response']['body']);
             }
 

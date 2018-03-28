@@ -48,8 +48,7 @@ class ThrottleFilter extends DispatcherFilter
 
         if (isset($config['message'])) {
             $message = $config['message'];
-        }
-        else {
+        } else {
             $message = $config['response']['body'];
         }
 
