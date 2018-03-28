@@ -224,7 +224,7 @@ class ThrottleMiddlewareTest extends TestCase
         // initial hit should create cache count 1 + expiration key with epoch
         $reflection->method->invokeArgs($middleware, []);
         $this->assertEquals(1, Cache::read('test-identifier', 'throttle'));
-        $this->assertNotFalse(Cache::read('test-identifier_expires', 'throttle'));
+        $this->assertTrue((bool)Cache::read('test-identifier_expires', 'throttle'));
         $expires = Cache::read('test-identifier_expires', 'throttle');
 
         // second hit should increase counter but have identical expires key
