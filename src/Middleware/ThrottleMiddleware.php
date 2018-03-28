@@ -5,7 +5,6 @@ use Cake\Core\InstanceConfigTrait;
 use Cake\Http\Response;
 use Cake\Http\ServerRequest;
 use Muffin\Throttle\ThrottleTrait;
-use Zend\Diactoros\Stream;
 
 class ThrottleMiddleware
 {
