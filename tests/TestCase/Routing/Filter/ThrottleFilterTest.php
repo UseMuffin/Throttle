@@ -2,6 +2,7 @@
 namespace Muffin\Throttle\Test\TestCase\Routing\Filter;
 
 use Cake\Cache\Cache;
+use Cake\Cache\Engine\ApcEngine;
 use Cake\Cache\Engine\ApcuEngine;
 use Cake\Event\Event;
 use Cake\Http\Response;
@@ -12,6 +13,8 @@ use StdClass;
 
 class ThrottleFilterTest extends TestCase
 {
+    protected $engineClass;
+
     /**
      * setUp method
      *
@@ -24,6 +27,12 @@ class ThrottleFilterTest extends TestCase
         $this->skipIf(!function_exists('apcu_store'), 'APCu is not installed or configured properly.');
         if ((PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg')) {
             $this->skipIf(!ini_get('apc.enable_cli'), 'APC is not enabled for the CLI.');
+        }
+
+        if (class_exists(ApcuEngine::class)) {
+            $this->engineClass = ApcuEngine::class;
+        } else {
+            $this->engineClass = ApcEngine::class;
         }
     }
 
@@ -52,7 +61,7 @@ class ThrottleFilterTest extends TestCase
     {
         Cache::drop('throttle');
         Cache::setConfig('throttle', [
-            'className' => ApcuEngine::class,
+            'className' => $this->engineClass,
             'prefix' => 'throttle_'
         ]);
 
@@ -83,7 +92,7 @@ class ThrottleFilterTest extends TestCase
     {
         Cache::drop('throttle');
         Cache::setConfig('throttle', [
-            'className' => ApcuEngine::class,
+            'className' => $this->engineClass,
             'prefix' => 'throttle_'
         ]);
 
@@ -203,7 +212,7 @@ class ThrottleFilterTest extends TestCase
     {
         Cache::drop('throttle');
         Cache::setConfig('throttle', [
-            'className' => ApcuEngine::class,
+            'className' => $this->engineClass,
             'prefix' => 'throttle_'
         ]);
 
