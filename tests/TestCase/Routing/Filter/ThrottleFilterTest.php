@@ -60,8 +60,9 @@ class ThrottleFilterTest extends TestCase
             'limit' => 1,
             'response' => [
                 'body' => 'Rate limit exceeded',
+                'type' => 'json',
                 'headers' => [
-                    'Content-Type' => 'application/json'
+                    'Custom-Header' => 'test/test'
                 ]
             ]
         ]);
@@ -79,8 +80,14 @@ class ThrottleFilterTest extends TestCase
         $result = $filter->beforeDispatch($event);
         $this->assertInstanceOf('Cake\Network\Response', $result);
         $this->assertEquals(429, $result->statusCode());
-        $this->assertContains('Content-Type: application/json', $result->headers());
+        $this->assertEquals('application/json', $result->type());
         $this->assertTrue($event->isStopped());
+
+        $expectedHeaders = [
+            'Custom-Header',
+            'Content-Type'
+        ];
+        $this->assertEquals($expectedHeaders, array_keys($result->header()));
     }
 
     /**

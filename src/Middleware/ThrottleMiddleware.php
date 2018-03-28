@@ -52,8 +52,8 @@ class ThrottleMiddleware
             $stream = new Stream('php://memory', 'wb+');
 
             if (is_array($config['response']['headers'])) {
-                foreach ($config['response']['headers'] as $key => $value) {
-                    $response = $response->withHeader($key, $value);
+                foreach ($config['response']['headers'] as $name => $value) {
+                    $response = $response->withHeader($name, $value);
                 }
             }
 
@@ -64,6 +64,7 @@ class ThrottleMiddleware
             }
 
             return $response->withStatus(429)
+                ->withType($config['response']['type'])
                 ->withBody($stream);
         }
 

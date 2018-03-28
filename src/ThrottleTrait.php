@@ -15,6 +15,7 @@ trait ThrottleTrait
     protected $_throttleConfig = [
         'response' => [
             'body' => 'Rate limit exceeded',
+            'type' => 'text/html',
             'headers' => []
         ],
         'interval' => '+1 minute',
