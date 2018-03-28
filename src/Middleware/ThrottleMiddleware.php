@@ -2,9 +2,9 @@
 namespace Muffin\Throttle\Middleware;
 
 use Cake\Core\InstanceConfigTrait;
+use Cake\Http\Response;
+use Cake\Http\ServerRequest;
 use Muffin\Throttle\ThrottleTrait;
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\ServerRequestInterface;
 use Zend\Diactoros\Stream;
 
 class ThrottleMiddleware
@@ -34,12 +34,12 @@ class ThrottleMiddleware
     /**
      * Called when the class is used as a function
      *
-     * @param \Psr\Http\Message\ServerRequestInterface $request Request object
-     * @param \Psr\Http\Message\ResponseInterface $response Response object
-     * @param callable $next Next class in middelware
-     * @return \Psr\Http\Message\ResponseInterface
+     * @param \Cake\Http\ServerRequest $request Request object
+     * @param \Cake\Http\Reponse $response Response object
+     * @param callable $next Next class in middleware
+     * @return \Cake\Http\Reponse
      */
-    public function __invoke(ServerRequestInterface $request, ResponseInterface $response, callable $next)
+    public function __invoke(ServerRequest $request, Response $response, callable $next)
     {
         $this->_setIdentifier($request);
         $this->_initCache();
