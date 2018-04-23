@@ -52,6 +52,5 @@
         "psr-4": {
             "Muffin\\Throttle\\Test\\": "tests"
         }
-    },
-    "minimum-stability": "RC"
+    }
 }
