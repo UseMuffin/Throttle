@@ -2,7 +2,6 @@
 namespace Muffin\Throttle;
 
 use Cake\Cache\Cache;
-use Cake\Routing\DispatcherFilter;
 
 trait ThrottleTrait
 {
@@ -13,13 +12,17 @@ trait ThrottleTrait
      * @var array
      */
     protected $_throttleConfig = [
-        'message' => 'Rate limit exceeded',
+        'response' => [
+            'body' => 'Rate limit exceeded',
+            'type' => 'text/html',
+            'headers' => []
+        ],
         'interval' => '+1 minute',
         'limit' => 10,
         'headers' => [
             'limit' => 'X-RateLimit-Limit',
             'remaining' => 'X-RateLimit-Remaining',
-            'reset' => 'X-RateLimit-Reset'
+            'reset' => 'X-RateLimit-Reset',
         ]
     ];
 
@@ -52,17 +55,6 @@ trait ThrottleTrait
     protected $_count;
 
     /**
-     * Function identifier calls
-     *
-     * @var array
-     */
-    protected $_compatFunctions = [
-        'getConfig' => 'getConfig',
-        'setConfig' => 'setConfig',
-        'header' => true
-    ];
-
-    /**
      * Set the default configuration
      *
      * @return array An array of default configuration
@@ -72,14 +64,6 @@ trait ThrottleTrait
         $this->_throttleConfig['identifier'] = function ($request) {
             return $request->clientIp();
         };
-
-        if ($this instanceof DispatcherFilter) {
-            $this->_compatFunctions = [
-                'getConfig' => 'config',
-                'setConfig' => 'config',
-                'header' => false
-            ];
-        }
 
         return $this->_throttleConfig;
     }
@@ -94,8 +78,8 @@ trait ThrottleTrait
      */
     protected function _setIdentifier($request)
     {
-        $key = $this->{$this->_compatFunctions['getConfig']}('identifier');
-        if (!is_callable($this->{$this->_compatFunctions['getConfig']}('identifier'))) {
+        $key = $this->getConfig('identifier');
+        if (!is_callable($this->getConfig('identifier'))) {
             throw new \InvalidArgumentException('Throttle identifier option must be a callable');
         }
         $this->_identifier = $key($request);
@@ -108,13 +92,11 @@ trait ThrottleTrait
      */
     protected function _initCache()
     {
-        $getFunction = $this->_compatFunctions['getConfig'];
-        $setFunction = $this->_compatFunctions['setConfig'];
-        if (!Cache::$getFunction(static::$cacheConfig)) {
-            Cache::$setFunction(static::$cacheConfig, [
+        if (!Cache::getConfig(static::$cacheConfig)) {
+            Cache::setConfig(static::$cacheConfig, [
                 'className' => $this->_getDefaultCacheConfigClassName(),
                 'prefix' => static::$cacheConfig . '_' . $this->_identifier,
-                'duration' => $this->{$this->_compatFunctions['getConfig']}('interval'),
+                'duration' => $this->getConfig('interval'),
             ]);
         }
     }
@@ -128,9 +110,7 @@ trait ThrottleTrait
      */
     protected function _getDefaultCacheConfigClassName()
     {
-        $function = $this->_compatFunctions['getConfig'];
-
-        $config = Cache::$function('default');
+        $config = Cache::getConfig('default');
         $engine = (string)$config['className'];
 
         // short cache engine names can be returned immediately
@@ -156,7 +136,11 @@ trait ThrottleTrait
     {
         if (Cache::read($this->_identifier, static::$cacheConfig) === false) {
             Cache::write($this->_identifier, 0, static::$cacheConfig);
-            Cache::write($this->_getCacheExpirationKey(), strtotime($this->{$this->_compatFunctions['getConfig']}('interval'), time()), static::$cacheConfig);
+            Cache::write(
+                $this->_getCacheExpirationKey(),
+                strtotime($this->getConfig('interval'), time()),
+                static::$cacheConfig
+            );
         }
 
         return Cache::increment($this->_identifier, 1, static::$cacheConfig);
@@ -180,26 +164,19 @@ trait ThrottleTrait
      */
     protected function _setHeaders($response)
     {
-        $configFunction = $this->_compatFunctions['getConfig'];
-        $header = $this->_compatFunctions['header'];
-
-        $headers = $this->$configFunction('headers');
+        $headers = $this->getConfig('headers');
 
         if (!is_array($headers)) {
             return $response;
         }
 
-        if ($header) {
-            $response = $response->withHeader($headers['limit'], (string)$this->$configFunction('limit'))
-                ->withHeader($headers['remaining'], (string)$this->_getRemainingConnections())
-                ->withHeader($headers['reset'], (string)Cache::read($this->_getCacheExpirationKey(), static::$cacheConfig));
-        } else {
-            $response->header($headers['limit'], $this->$configFunction('limit'));
-            $response->header($headers['remaining'], $this->_getRemainingConnections());
-            $response->header($headers['reset'], Cache::read($this->_getCacheExpirationKey(), static::$cacheConfig));
-        }
-
-        return $response;
+        return $response
+            ->withHeader($headers['limit'], (string)$this->getConfig('limit'))
+            ->withHeader($headers['remaining'], (string)$this->_getRemainingConnections())
+            ->withHeader(
+                $headers['reset'],
+                (string)Cache::read($this->_getCacheExpirationKey(), static::$cacheConfig)
+            );
     }
 
     /**
@@ -209,7 +186,7 @@ trait ThrottleTrait
      */
     protected function _getRemainingConnections()
     {
-        $remaining = $this->{$this->_compatFunctions['getConfig']}('limit') - $this->_count;
+        $remaining = $this->getConfig('limit') - $this->_count;
         if ($remaining <= 0) {
             return 0;
         }

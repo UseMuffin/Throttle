@@ -1,12 +1,10 @@
 <?php
 namespace Muffin\Throttle\Middleware;
 
-use Cake\Cache\Cache;
 use Cake\Core\InstanceConfigTrait;
+use Cake\Http\Response;
+use Cake\Http\ServerRequest;
 use Muffin\Throttle\ThrottleTrait;
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\ServerRequestInterface;
-use Zend\Diactoros\Stream;
 
 class ThrottleMiddleware
 {
@@ -35,23 +33,35 @@ class ThrottleMiddleware
     /**
      * Called when the class is used as a function
      *
-     * @param \Psr\Http\Message\ServerRequestInterface $request Request object
-     * @param \Psr\Http\Message\ResponseInterface $response Response object
-     * @param callable $next Next class in middelware
-     * @return \Psr\Http\Message\ResponseInterface
+     * @param \Cake\Http\ServerRequest $request Request object
+     * @param \Cake\Http\Response $response Response object
+     * @param callable $next Next class in middleware
+     * @return \Cake\Http\Response
      */
-    public function __invoke(ServerRequestInterface $request, ResponseInterface $response, callable $next)
+    public function __invoke(ServerRequest $request, Response $response, callable $next)
     {
         $this->_setIdentifier($request);
         $this->_initCache();
         $this->_count = $this->_touch();
 
-        if ($this->_count > $this->getConfig('limit')) {
-            $stream = new Stream('php://memory', 'wb+');
-            $stream->write((string)$this->getConfig('message'));
+        $config = $this->getConfig();
+
+        if ($this->_count > $config['limit']) {
+            if (is_array($config['response']['headers'])) {
+                foreach ($config['response']['headers'] as $name => $value) {
+                    $response = $response->withHeader($name, $value);
+                }
+            }
+
+            if (isset($config['message'])) {
+                $message = $config['message'];
+            } else {
+                $message = $config['response']['body'];
+            }
 
             return $response->withStatus(429)
-                ->withBody($stream);
+                ->withType($config['response']['type'])
+                ->withStringBody($message);
         }
 
         $response = $next($request, $response);
