@@ -55,6 +55,7 @@ Include the middleware in inside of the Application.php:
 
 ```php
 use Muffin\Throttle\Middleware\ThrottleMiddleware;
+use Psr\Http\Message\ServerRequestInterface;
 ```
 
 Add the middleware to the stack and pass your custom configuration:
@@ -71,7 +72,7 @@ public function middleware($middleware)
         'interval' => '+1 hour',
         'limit' => 300,
         'identifier' => function (ServerRequestInterface $request) {
-            if (null !== $request->getHeaderLine('Authorization')) {
+            if (!empty($request->getHeaderLine('Authorization'))) {
                 return str_replace('Bearer ', '', $request->getHeaderLine('Authorization'));
             }
             return $request->clientIp();
@@ -156,7 +157,7 @@ DispatcherFactory::add('Muffin/Throttle.Throttle', [
     'interval' => '+1 hour',
     'limit' => 300,
     'identifier' => function (Request $request) {
-        if (null !== $request->getHeaderLine('Authorization')) {
+        if (!empty($request->getHeaderLine('Authorization'))) {
             return str_replace('Bearer ', '', $request->getHeaderLine('Authorization'));
         }
         return $request->clientIp();
