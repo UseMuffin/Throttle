@@ -26,7 +26,7 @@ class ThrottleMiddleware
      */
     public function __construct($config = [])
     {
-        $config += $this->_setConfiguration();
+        $config = array_replace_recursive($this->_setConfiguration(), $config);
         $this->setConfig($config);
     }
 

@@ -58,6 +58,21 @@ class ThrottleMiddlewareTest extends TestCase
     }
 
     /**
+     * Test __construct with partial config provided
+     */
+    public function testConstructorWithPartialConfigProvided()
+    {
+        $middleware = new ThrottleMiddleware([
+            'response' => [
+                'body' => 'Rate limit exceeded',
+            ],
+        ]);
+        $result = $middleware->getConfig();
+
+        $this->assertTrue(array_key_exists('headers', $result['response']));
+    }
+
+    /**
      * Test __invoke
      */
     public function testInvoke()
