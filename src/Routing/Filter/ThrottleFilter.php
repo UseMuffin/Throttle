@@ -18,7 +18,7 @@ class ThrottleFilter extends DispatcherFilter
      */
     public function __construct($config = [])
     {
-        $config += $this->_setConfiguration();
+        $config = array_replace_recursive($this->_setConfiguration(), $config);
 
         parent::__construct($config);
     }

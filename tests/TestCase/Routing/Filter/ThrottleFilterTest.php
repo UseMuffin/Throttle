@@ -36,6 +36,9 @@ class ThrottleFilterTest extends TestCase
         }
     }
 
+    /**
+     * Test __construct
+     */
     public function testConstructor()
     {
         $filter = new ThrottleFilter();
@@ -53,6 +56,21 @@ class ThrottleFilterTest extends TestCase
             'reset' => 'X-RateLimit-Reset'
         ];
         $this->assertEquals($expectedHeaders, $result['headers']);
+    }
+
+    /**
+     * Test __construct with partial config provided
+     */
+    public function testConstructorWithPartialConfigProvided()
+    {
+        $filter = new ThrottleFilter([
+            'response' => [
+                'body' => 'Rate limit exceeded',
+            ],
+        ]);
+        $result = $filter->getConfig();
+
+        $this->assertTrue(array_key_exists('headers', $result['response']));
     }
 
     /**
