@@ -36,7 +36,7 @@ class ThrottleMiddleware
      * @param \Cake\Http\ServerRequest $request Request object
      * @param \Cake\Http\Response $response Response object
      * @param callable $next Next class in middleware
-     * @return \Cake\Http\Response
+     * @return \Psr\Http\Message\ResponseInterface
      */
     public function __invoke(ServerRequest $request, Response $response, callable $next)
     {

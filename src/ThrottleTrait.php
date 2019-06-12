@@ -72,7 +72,7 @@ trait ThrottleTrait
      * Sets the identifier class property. Uses Throttle default IP address
      * based identifier unless a callable alternative is passed.
      *
-     * @param \Psr\Http\Message\ServerRequestInterface|\Cake\Http\Request $request RequestInterface instance
+     * @param \Psr\Http\Message\ServerRequestInterface|\Cake\Http\ServerRequest $request RequestInterface instance
      * @return void
      * @throws \InvalidArgumentException
      */
