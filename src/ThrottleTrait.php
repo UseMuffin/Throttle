@@ -53,7 +53,7 @@ trait ThrottleTrait
     /**
      * Number of connections after increment
      *
-     * @var string
+     * @var int
      */
     protected $_count;
 
@@ -133,9 +133,9 @@ trait ThrottleTrait
      * increment() failing on 0. A separate cache key is created to store
      * the interval expiration time in epoch.
      *
-     * @return int|false
+     * @return int
      */
-    protected function _touch()
+    protected function _touch(): int
     {
         if (Cache::read($this->_identifier, static::$cacheConfig) === null) {
             Cache::write($this->_identifier, 0, static::$cacheConfig);
@@ -146,7 +146,7 @@ trait ThrottleTrait
             );
         }
 
-        return Cache::increment($this->_identifier, 1, static::$cacheConfig);
+        return Cache::increment($this->_identifier, 1, static::$cacheConfig) ?? 0;
     }
 
     /**
