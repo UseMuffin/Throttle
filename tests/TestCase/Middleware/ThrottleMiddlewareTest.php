@@ -1,14 +1,15 @@
 <?php
+declare(strict_types=1);
+
 namespace Muffin\Throttle\Test\TestCase\Middleware;
 
 use Cake\Cache\Cache;
-use Cake\Cache\Engine\ApcEngine;
 use Cake\Cache\Engine\ApcuEngine;
 use Cake\Http\Response;
 use Cake\Http\ServerRequest;
 use Cake\TestSuite\TestCase;
 use Muffin\Throttle\Middleware\ThrottleMiddleware;
-use StdClass;
+use stdClass;
 
 class ThrottleMiddlewareTest extends TestCase
 {
@@ -19,7 +20,7 @@ class ThrottleMiddlewareTest extends TestCase
      *
      * @return void
      */
-    public function setUp()
+    public function setUp(): void
     {
         parent::setUp();
 
@@ -28,17 +29,13 @@ class ThrottleMiddlewareTest extends TestCase
             $this->skipIf(!ini_get('apc.enable_cli'), 'APC is not enabled for the CLI.');
         }
 
-        if (class_exists(ApcuEngine::class)) {
-            $this->engineClass = ApcuEngine::class;
-        } else {
-            $this->engineClass = ApcEngine::class;
-        }
+        $this->engineClass = ApcuEngine::class;
     }
 
     /**
      * Test __construct
      */
-    public function testConstructor()
+    public function testConstructor(): void
     {
         $middleware = new ThrottleMiddleware();
         $result = $middleware->getConfig();
@@ -52,7 +49,7 @@ class ThrottleMiddlewareTest extends TestCase
         $expectedHeaders = [
             'limit' => 'X-RateLimit-Limit',
             'remaining' => 'X-RateLimit-Remaining',
-            'reset' => 'X-RateLimit-Reset'
+            'reset' => 'X-RateLimit-Reset',
         ];
         $this->assertEquals($expectedHeaders, $result['headers']);
     }
@@ -60,7 +57,7 @@ class ThrottleMiddlewareTest extends TestCase
     /**
      * Test __construct with partial config provided
      */
-    public function testConstructorWithPartialConfigProvided()
+    public function testConstructorWithPartialConfigProvided(): void
     {
         $middleware = new ThrottleMiddleware([
             'response' => [
@@ -75,12 +72,12 @@ class ThrottleMiddlewareTest extends TestCase
     /**
      * Test __invoke
      */
-    public function testInvoke()
+    public function testInvoke(): void
     {
         Cache::drop('throttle');
         Cache::setConfig('throttle', [
             'className' => $this->engineClass,
-            'prefix' => 'throttle_'
+            'prefix' => 'throttle_',
         ]);
 
         $middleware = new ThrottleMiddleware([
@@ -89,16 +86,16 @@ class ThrottleMiddlewareTest extends TestCase
                 'body' => 'Rate limit exceeded',
                 'type' => 'json',
                 'headers' => [
-                    'Custom-Header' => 'test/test'
-                ]
-            ]
+                    'Custom-Header' => 'test/test',
+                ],
+            ],
         ]);
 
         $response = new Response();
         $request = new ServerRequest([
             'environment' => [
-                'REMOTE_ADDR' => '192.168.1.33'
-            ]
+                'REMOTE_ADDR' => '192.168.1.33',
+            ],
         ]);
 
         $result = $middleware(
@@ -112,7 +109,7 @@ class ThrottleMiddlewareTest extends TestCase
         $expectedHeaders = [
             'X-RateLimit-Limit',
             'X-RateLimit-Remaining',
-            'X-RateLimit-Reset'
+            'X-RateLimit-Reset',
         ];
 
         $this->assertInstanceOf('Cake\Http\Response', $result);
@@ -129,7 +126,7 @@ class ThrottleMiddlewareTest extends TestCase
 
         $expectedHeaders = [
             'Custom-Header',
-            'Content-Type'
+            'Content-Type',
         ];
 
         $this->assertInstanceOf('Cake\Http\Response', $result);
@@ -144,14 +141,14 @@ class ThrottleMiddlewareTest extends TestCase
 
     /**
      * Using the File Storage cache engine should throw a LogicException.
-     *
-     * @expectedException \LogicException
      */
-    public function testFileCacheException()
+    public function testFileCacheException(): void
     {
+        $this->expectException(\TypeError::class);
+
         Cache::setConfig('file', [
             'className' => 'Cake\Cache\Engine\FileEngine',
-            'prefix' => 'throttle_'
+            'prefix' => 'throttle_',
         ]);
 
         $middleware = new ThrottleMiddleware();
@@ -161,11 +158,11 @@ class ThrottleMiddlewareTest extends TestCase
 
     /**
      * Test setting the identifier class property
-     *
-     * @expectedException \LogicException
      */
-    public function testSetIdentifierMethod()
+    public function testSetIdentifierMethod(): void
     {
+        $this->expectException(\LogicException::class);
+
         $middleware = new ThrottleMiddleware();
         $reflection = $this->getReflection($middleware, '_setIdentifier');
 
@@ -176,7 +173,7 @@ class ThrottleMiddlewareTest extends TestCase
 
         // should throw an exception if identifier is not a callable
         $middleware = new ThrottleMiddleware([
-            'identifier' => 'non-callable-string'
+            'identifier' => 'non-callable-string',
         ]);
         $reflection = $this->getReflection($middleware, '_setIdentifier');
         $reflection->method->invokeArgs($middleware, [new ServerRequest()]);
@@ -185,11 +182,11 @@ class ThrottleMiddlewareTest extends TestCase
     /**
      * Test cache intialization.
      */
-    public function testInitCacheMethod()
+    public function testInitCacheMethod(): void
     {
         Cache::drop('default');
         Cache::setConfig('default', [
-            'className' => 'Cake\Cache\Engine\FileEngine'
+            'className' => 'Cake\Cache\Engine\FileEngine',
         ]);
 
         // test if new cache config is created if it does not exist
@@ -202,7 +199,7 @@ class ThrottleMiddlewareTest extends TestCase
         $expected = [
             'className' => 'File',
             'prefix' => 'throttle_',
-            'duration' => '+1 minute'
+            'duration' => '+1 minute',
         ];
 
         $this->assertEquals($expected, Cache::getConfig('throttle'));
@@ -215,7 +212,7 @@ class ThrottleMiddlewareTest extends TestCase
      * Throttle uses the cache className as configured for the default
      * CacheEngine. Here we test if we can resolve the className.
      */
-    public function testGetDefaultCacheConfigClassNameMethod()
+    public function testGetDefaultCacheConfigClassNameMethod(): void
     {
         $middleware = new ThrottleMiddleware();
         $reflection = $this->getReflection($middleware, '_getDefaultCacheConfigClassName');
@@ -223,7 +220,7 @@ class ThrottleMiddlewareTest extends TestCase
         // Make sure short cache engine names get resolved properly
         Cache::drop('default');
         Cache::setConfig('default', [
-            'className' => 'File'
+            'className' => 'File',
         ]);
 
         $expected = 'File';
@@ -233,7 +230,7 @@ class ThrottleMiddlewareTest extends TestCase
         // Make sure fully namespaced cache engine names get resolved properly
         Cache::drop('default');
         Cache::setConfig('default', [
-            'className' => 'Cake\Cache\Engine\FileEngine'
+            'className' => 'Cake\Cache\Engine\FileEngine',
         ]);
         $expected = 'File';
         $result = $reflection->method->invokeArgs($middleware, [new ServerRequest()]);
@@ -243,12 +240,12 @@ class ThrottleMiddlewareTest extends TestCase
     /**
      * Test atomic updating client hits
      */
-    public function testTouchMethod()
+    public function testTouchMethod(): void
     {
         Cache::drop('throttle');
         Cache::setConfig('throttle', [
             'className' => $this->engineClass,
-            'prefix' => 'throttle_'
+            'prefix' => 'throttle_',
         ]);
 
         $middleware = new ThrottleMiddleware();
@@ -273,7 +270,7 @@ class ThrottleMiddlewareTest extends TestCase
     /**
      * Test if proper string is returned for use as cache expiration key.
      */
-    public function testGetCacheExpirationKeyMethod()
+    public function testGetCacheExpirationKeyMethod(): void
     {
         $middelware = new ThrottleMiddleware();
         $reflection = $this->getReflection($middelware, '_getCacheExpirationKey', '_identifier');
@@ -294,11 +291,11 @@ class ThrottleMiddlewareTest extends TestCase
     /**
      * Test x-headers
      */
-    public function testSetHeadersMethod()
+    public function testSetHeadersMethod(): void
     {
         // test disabled headers, should return null
         $middleware = new ThrottleMiddleware([
-            'headers' => false
+            'headers' => false,
         ]);
         $reflection = $this->getReflection($middleware, '_setHeaders');
         $result = $reflection->method->invokeArgs($middleware, [new Response()]);
@@ -308,7 +305,7 @@ class ThrottleMiddlewareTest extends TestCase
     /**
      * Test x-headers
      */
-    public function testRemainingConnectionsMethod()
+    public function testRemainingConnectionsMethod(): void
     {
         $middleware = new ThrottleMiddleware();
         $reflection = $this->getReflection($middleware, '_getRemainingConnections', '_count');
@@ -334,7 +331,7 @@ class ThrottleMiddlewareTest extends TestCase
      * Convenience function to return an object with reflection class, accessible
      * protected method and optional accessible protected property.
      */
-    protected function getReflection($object, $method = false, $property = false)
+    protected function getReflection(object $object, ?string $method = null, ?string $property = null): object
     {
         $obj = new stdClass();
         $obj->class = new \ReflectionClass(get_class($object));

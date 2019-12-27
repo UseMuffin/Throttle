@@ -1,11 +1,14 @@
 <?php
+declare(strict_types=1);
+
 namespace Muffin\Throttle;
 
 use Cake\Cache\Cache;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
 
 trait ThrottleTrait
 {
-
     /*
      * Default config for Throttle Middleware
      *
@@ -15,7 +18,7 @@ trait ThrottleTrait
         'response' => [
             'body' => 'Rate limit exceeded',
             'type' => 'text/html',
-            'headers' => []
+            'headers' => [],
         ],
         'interval' => '+1 minute',
         'limit' => 10,
@@ -23,7 +26,7 @@ trait ThrottleTrait
             'limit' => 'X-RateLimit-Limit',
             'remaining' => 'X-RateLimit-Remaining',
             'reset' => 'X-RateLimit-Reset',
-        ]
+        ],
     ];
 
     /**
@@ -59,7 +62,7 @@ trait ThrottleTrait
      *
      * @return array An array of default configuration
      */
-    protected function _setConfiguration()
+    protected function _setConfiguration(): array
     {
         $this->_throttleConfig['identifier'] = function ($request) {
             return $request->clientIp();
@@ -72,11 +75,11 @@ trait ThrottleTrait
      * Sets the identifier class property. Uses Throttle default IP address
      * based identifier unless a callable alternative is passed.
      *
-     * @param \Psr\Http\Message\ServerRequestInterface|\Cake\Http\ServerRequest $request RequestInterface instance
+     * @param \Psr\Http\Message\ServerRequestInterface $request RequestInterface instance
      * @return void
      * @throws \InvalidArgumentException
      */
-    protected function _setIdentifier($request)
+    protected function _setIdentifier(ServerRequestInterface $request): void
     {
         $key = $this->getConfig('identifier');
         if (!is_callable($this->getConfig('identifier'))) {
@@ -90,9 +93,9 @@ trait ThrottleTrait
      *
      * @return void
      */
-    protected function _initCache()
+    protected function _initCache(): void
     {
-        if (!Cache::getConfig(static::$cacheConfig)) {
+        if (Cache::getConfig(static::$cacheConfig) === null) {
             Cache::setConfig(static::$cacheConfig, [
                 'className' => $this->_getDefaultCacheConfigClassName(),
                 'prefix' => static::$cacheConfig . '_' . $this->_identifier,
@@ -108,7 +111,7 @@ trait ThrottleTrait
      *
      * @return string ClassName property of default Cache engine
      */
-    protected function _getDefaultCacheConfigClassName()
+    protected function _getDefaultCacheConfigClassName(): string
     {
         $config = Cache::getConfig('default');
         $engine = (string)$config['className'];
@@ -130,11 +133,11 @@ trait ThrottleTrait
      * increment() failing on 0. A separate cache key is created to store
      * the interval expiration time in epoch.
      *
-     * @return mixed
+     * @return int|false
      */
     protected function _touch()
     {
-        if (Cache::read($this->_identifier, static::$cacheConfig) === false) {
+        if (Cache::read($this->_identifier, static::$cacheConfig) === null) {
             Cache::write($this->_identifier, 0, static::$cacheConfig);
             Cache::write(
                 $this->_getCacheExpirationKey(),
@@ -151,7 +154,7 @@ trait ThrottleTrait
      *
      * @return string Cache key holding cache expiration in epoch.
      */
-    protected function _getCacheExpirationKey()
+    protected function _getCacheExpirationKey(): string
     {
         return $this->_identifier . '_' . static::$cacheExpirationSuffix;
     }
@@ -159,10 +162,10 @@ trait ThrottleTrait
     /**
      * Extends response with X-headers containing rate limiting information.
      *
-     * @param \Psr\Http\Message\ResponseInterface|\Cake\Network\Response $response ResponseInterface instance
+     * @param \Psr\Http\Message\ResponseInterface $response ResponseInterface instance
      * @return \Psr\Http\Message\ResponseInterface
      */
-    protected function _setHeaders($response)
+    protected function _setHeaders(ResponseInterface $response): ResponseInterface
     {
         $headers = $this->getConfig('headers');
 
@@ -184,7 +187,7 @@ trait ThrottleTrait
      *
      * @return int Number of remaining client hits, zero if limit is reached
      */
-    protected function _getRemainingConnections()
+    protected function _getRemainingConnections(): int
     {
         $remaining = $this->getConfig('limit') - $this->_count;
         if ($remaining <= 0) {
