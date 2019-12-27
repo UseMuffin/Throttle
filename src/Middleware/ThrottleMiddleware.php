@@ -6,6 +6,8 @@ namespace Muffin\Throttle\Middleware;
 use Cake\Cache\Cache;
 use Cake\Core\InstanceConfigTrait;
 use Cake\Http\Response;
+use Closure;
+use InvalidArgumentException;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
@@ -128,11 +130,11 @@ class ThrottleMiddleware implements MiddlewareInterface
      */
     protected function _setIdentifier(ServerRequestInterface $request): void
     {
-        $key = $this->getConfig('identifier');
-        if (!is_callable($this->getConfig('identifier'))) {
-            throw new \InvalidArgumentException('Throttle identifier option must be a callable');
+        $closure = $this->getConfig('identifier');
+        if (!$closure instanceof Closure) {
+            throw new InvalidArgumentException('Throttle identifier option must be a Closure instance');
         }
-        $this->_identifier = $key($request);
+        $this->_identifier = $closure($request);
     }
 
     /**
