@@ -193,7 +193,7 @@ class ThrottleMiddleware implements MiddlewareInterface
             );
         }
 
-        return Cache::increment($this->_identifier, 1, static::$cacheConfig) ?? 0;
+        return Cache::increment($this->_identifier, 1, static::$cacheConfig) ?: 0;
     }
 
     /**
@@ -241,6 +241,6 @@ class ThrottleMiddleware implements MiddlewareInterface
             return 0;
         }
 
-        return $remaining;
+        return (int)$remaining;
     }
 }
