@@ -5,14 +5,13 @@
 [![Total Downloads](https://img.shields.io/packagist/dt/muffin/throttle.svg?style=flat-square)](https://packagist.org/packages/muffin/throttle)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](LICENSE)
 
-(API) Rate limiting requests in CakePHP 4
+(API) Rate limiting requests in CakePHP
 
 This plugin allows you to limit the number of requests a client can make to your
 app in a given time frame.
 
 ## Requirements
 
-- CakePHP 4.0+
 - CakePHP cache engine with support for atomic updates
 
 ## Installation
@@ -65,7 +64,7 @@ public function middleware($middleware)
 
     $throttleMiddleware = new ThrottleMiddleware([
         'response' => [
-            'body' => 'Rate limit exceeded'
+            'body' => 'Rate limit exceeded',
         ],
         'interval' => '+1 hour',
         'limit' => 300,
@@ -73,6 +72,7 @@ public function middleware($middleware)
             if (!empty($request->getHeaderLine('Authorization'))) {
                 return str_replace('Bearer ', '', $request->getHeaderLine('Authorization'));
             }
+
             return $request->clientIp();
         }
     ]);
@@ -105,7 +105,7 @@ your configuration array:
 'headers' => [
     'limit' => 'X-MyRateLimit-Limit',
     'remaining' => 'X-MyRateLimit-Remaining',
-    'reset' => 'X-MyRateLimit-Reset'
+    'reset' => 'X-MyRateLimit-Reset',
 ]
 ```
 
@@ -121,10 +121,10 @@ new ThrottleMiddleware([
         'body' => json_encode(['error' => 'Rate limit exceeded']),
         'type' => 'json',
         'headers' => [
-            'Custom-Header' => 'custom_value'
+            'Custom-Header' => 'custom_value',
         ]
     ],
-    'limit' => 300
+    'limit' => 300,
 ]);
 ```
 
@@ -145,7 +145,7 @@ http://github.com/usemuffin/throttle/issues
 
 ## License
 
-Copyright (c) 2015-2017, [Use Muffin] and licensed under [The MIT License][mit].
+Copyright (c) 2015-Present, [Use Muffin] and licensed under [The MIT License][mit].
 
 [cakephp]:http://cakephp.org
 [composer]:http://getcomposer.org
