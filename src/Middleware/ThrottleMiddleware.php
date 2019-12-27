@@ -1,14 +1,16 @@
 <?php
+declare(strict_types=1);
+
 namespace Muffin\Throttle\Middleware;
 
 use Cake\Core\InstanceConfigTrait;
 use Cake\Http\Response;
 use Cake\Http\ServerRequest;
 use Muffin\Throttle\ThrottleTrait;
+use Psr\Http\Message\ResponseInterface;
 
 class ThrottleMiddleware
 {
-
     use InstanceConfigTrait;
     use ThrottleTrait;
 
@@ -24,7 +26,7 @@ class ThrottleMiddleware
      *
      * @param array $config Configuration options
      */
-    public function __construct($config = [])
+    public function __construct(array $config = [])
     {
         $config = array_replace_recursive($this->_setConfiguration(), $config);
         $this->setConfig($config);
@@ -38,7 +40,7 @@ class ThrottleMiddleware
      * @param callable $next Next class in middleware
      * @return \Psr\Http\Message\ResponseInterface
      */
-    public function __invoke(ServerRequest $request, Response $response, callable $next)
+    public function __invoke(ServerRequest $request, Response $response, callable $next): ResponseInterface
     {
         $this->_setIdentifier($request);
         $this->_initCache();
