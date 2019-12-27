@@ -1,6 +1,6 @@
 {
     "name": "muffin/throttle",
-    "description": "(API) Rate limiting requests in CakePHP 4",
+    "description": "(API) Rate limiting requests in CakePHP",
     "type": "cakephp-plugin",
     "keywords": [
         "cakephp",
@@ -41,7 +41,7 @@
     },
     "require-dev": {
         "cakephp/cakephp-codesniffer": "^4.0",
-        "phpunit/phpunit": "^8.0"
+        "phpunit/phpunit": "~8.5.0"
     },
     "autoload": {
         "psr-4": {
