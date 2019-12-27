@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+use Cake\Core\Plugin;
+
 /**
  * Test suite bootstrap.
  *
@@ -8,10 +10,6 @@ declare(strict_types=1);
  * has been installed as a dependency of the plugin, or the plugin is itself
  * installed as a dependency of an application.
  */
-
-use Cake\Core\Plugin;
-use Cake\Datasource\ConnectionManager;
-
 $findRoot = function ($root) {
     do {
         $lastRoot = $root;
@@ -25,10 +23,6 @@ $findRoot = function ($root) {
 $root = $findRoot(__FILE__);
 unset($findRoot);
 chdir($root);
-
-if (!getenv('db_dsn')) {
-    putenv('db_dsn=sqlite:///:memory:');
-}
-ConnectionManager::setConfig('test', ['url' => getenv('db_dsn')]);
+require $root . '/vendor/cakephp/cakephp/tests/bootstrap.php';
 
 Plugin::getCollection()->add(new \Muffin\Throttle\Plugin());
