@@ -50,7 +50,8 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "Muffin\\Throttle\\Test\\": "tests"
+            "Muffin\\Throttle\\Test\\": "tests",
+            "TestApp\\": "tests/test_app/src"
         }
     }
 }

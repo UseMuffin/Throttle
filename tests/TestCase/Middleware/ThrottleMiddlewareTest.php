@@ -10,6 +10,7 @@ use Cake\Http\ServerRequest;
 use Cake\TestSuite\TestCase;
 use Muffin\Throttle\Middleware\ThrottleMiddleware;
 use stdClass;
+use TestApp\Http\TestRequestHandler;
 
 class ThrottleMiddlewareTest extends TestCase
 {
@@ -70,9 +71,9 @@ class ThrottleMiddlewareTest extends TestCase
     }
 
     /**
-     * Test __invoke
+     * Test process
      */
-    public function testInvoke(): void
+    public function testProcess(): void
     {
         Cache::drop('throttle');
         Cache::setConfig('throttle', [
@@ -91,19 +92,15 @@ class ThrottleMiddlewareTest extends TestCase
             ],
         ]);
 
-        $response = new Response();
         $request = new ServerRequest([
             'environment' => [
                 'REMOTE_ADDR' => '192.168.1.33',
             ],
         ]);
 
-        $result = $middleware(
+        $result = $middleware->process(
             $request,
-            $response,
-            function ($request, $response) {
-                return $response;
-            }
+            new TestRequestHandler()
         );
 
         $expectedHeaders = [
@@ -112,16 +109,13 @@ class ThrottleMiddlewareTest extends TestCase
             'X-RateLimit-Reset',
         ];
 
-        $this->assertInstanceOf('Cake\Http\Response', $result);
+        $this->assertInstanceOf(Response::class, $result);
         $this->assertEquals(200, $result->getStatusCode());
         $this->assertEquals(3, count(array_intersect($expectedHeaders, array_keys($result->getHeaders()))));
 
-        $result = $middleware(
+        $result = $middleware->process(
             $request,
-            $response,
-            function ($request, $response) {
-                return $response;
-            }
+            new TestRequestHandler()
         );
 
         $expectedHeaders = [
@@ -129,12 +123,8 @@ class ThrottleMiddlewareTest extends TestCase
             'Content-Type',
         ];
 
-        $this->assertInstanceOf('Cake\Http\Response', $result);
-        if (method_exists($result, 'getType')) {
-            $this->assertEquals('application/json', $result->getType());
-        } else {
-            $this->assertEquals('application/json', $result->type());
-        }
+        $this->assertInstanceOf(Response::class, $result);
+        $this->assertEquals('application/json', $result->getType());
         $this->assertEquals(2, count(array_intersect($expectedHeaders, array_keys($result->getHeaders()))));
         $this->assertEquals(429, $result->getStatusCode());
     }
@@ -299,7 +289,7 @@ class ThrottleMiddlewareTest extends TestCase
         ]);
         $reflection = $this->getReflection($middleware, '_setHeaders');
         $result = $reflection->method->invokeArgs($middleware, [new Response()]);
-        $this->assertInstanceOf('Cake\Http\Response', $result);
+        $this->assertInstanceOf(Response::class, $result);
     }
 
     /**
