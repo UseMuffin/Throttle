@@ -16,7 +16,7 @@ trait ThrottleTrait
         'response' => [
             'body' => 'Rate limit exceeded',
             'type' => 'text/html',
-            'headers' => []
+            'headers' => [],
         ],
         'interval' => '+1 minute',
         'limit' => 10,
@@ -25,7 +25,7 @@ trait ThrottleTrait
             'remaining' => 'X-RateLimit-Remaining',
             'reset' => 'X-RateLimit-Reset',
         ],
-        'weight' => 1
+        'weight' => 1,
     ];
 
     /**
@@ -96,7 +96,8 @@ trait ThrottleTrait
     {
         if (!Cache::getConfig(static::$cacheConfig)) {
             Cache::setConfig(
-                static::$cacheConfig, [
+                static::$cacheConfig,
+                [
                 'className' => $this->_getDefaultCacheConfigClassName(),
                 'prefix' => static::$cacheConfig . '_' . $this->_identifier,
                 'duration' => $this->getConfig('interval'),
@@ -165,7 +166,7 @@ trait ThrottleTrait
         $configWeight = $this->getConfig('weight');
 
         if (
-            // classify simple issues with configuration
+// classify simple issues with configuration
             empty($request) || (!is_int($configWeight) && !is_callable($configWeight))
             // classify request param contents
             || !($request instanceof ServerRequest)

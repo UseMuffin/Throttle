@@ -8,7 +8,6 @@ use Muffin\Throttle\ThrottleTrait;
 
 class ThrottleFilter extends DispatcherFilter
 {
-
     use ThrottleTrait;
 
     /**
@@ -56,7 +55,7 @@ class ThrottleFilter extends DispatcherFilter
             [
             'body' => $message,
             'status' => 429,
-            'type' => $config['response']['type']
+            'type' => $config['response']['type'],
             ]
         );
 

@@ -53,7 +53,7 @@ class ThrottleFilterTest extends TestCase
         $expectedHeaders = [
             'limit' => 'X-RateLimit-Limit',
             'remaining' => 'X-RateLimit-Remaining',
-            'reset' => 'X-RateLimit-Reset'
+            'reset' => 'X-RateLimit-Reset',
         ];
         $this->assertEquals($expectedHeaders, $result['headers']);
     }
@@ -81,7 +81,7 @@ class ThrottleFilterTest extends TestCase
         Cache::drop('throttle');
         Cache::setConfig('throttle', [
             'className' => $this->engineClass,
-            'prefix' => 'throttle_'
+            'prefix' => 'throttle_',
         ]);
 
         $filter = new ThrottleFilter([
@@ -90,15 +90,15 @@ class ThrottleFilterTest extends TestCase
                 'body' => 'Rate limit exceeded',
                 'type' => 'json',
                 'headers' => [
-                    'Custom-Header' => 'test/test'
-                ]
-            ]
+                    'Custom-Header' => 'test/test',
+                ],
+            ],
         ]);
         $response = new Response();
         $request = new ServerRequest([
             'environment' => [
-                'REMOTE_ADDR' => '192.168.1.2'
-            ]
+                'REMOTE_ADDR' => '192.168.1.2',
+            ],
         ]);
 
         $event = new Event('Dispatcher.beforeDispatch', $this, compact('request', 'response'));
@@ -117,7 +117,7 @@ class ThrottleFilterTest extends TestCase
 
         $expectedHeaders = [
             'Content-Type',
-            'Custom-Header'
+            'Custom-Header',
         ];
         $this->assertEquals($expectedHeaders, array_keys($result->getHeaders()));
     }
@@ -130,17 +130,17 @@ class ThrottleFilterTest extends TestCase
         Cache::drop('throttle');
         Cache::setConfig('throttle', [
             'className' => $this->engineClass,
-            'prefix' => 'throttle_'
+            'prefix' => 'throttle_',
         ]);
 
         $filter = new ThrottleFilter([
-            'limit' => 1
+            'limit' => 1,
         ]);
         $response = new Response();
         $request = new ServerRequest([
             'environment' => [
-                'HTTP_CLIENT_IP' => '192.168.1.2'
-            ]
+                'HTTP_CLIENT_IP' => '192.168.1.2',
+            ],
         ]);
 
         $event = new Event('Dispatcher.beforeDispatch', $this, compact('request', 'response'));
@@ -157,7 +157,7 @@ class ThrottleFilterTest extends TestCase
     {
         Cache::setConfig('file', [
             'className' => 'Cake\Cache\Engine\FileEngine',
-            'prefix' => 'throttle_'
+            'prefix' => 'throttle_',
         ]);
 
         $filter = new ThrottleFilter();
@@ -182,7 +182,7 @@ class ThrottleFilterTest extends TestCase
 
         // should throw an exception if identifier is not a callable
         $filter = new ThrottleFilter([
-            'identifier' => 'non-callable-string'
+            'identifier' => 'non-callable-string',
         ]);
         $reflection = $this->getReflection($filter, '_setIdentifier');
         $reflection->method->invokeArgs($filter, [new ServerRequest()]);
@@ -195,7 +195,7 @@ class ThrottleFilterTest extends TestCase
     {
         Cache::drop('default');
         Cache::setConfig('default', [
-            'className' => 'Cake\Cache\Engine\FileEngine'
+            'className' => 'Cake\Cache\Engine\FileEngine',
         ]);
 
         // test if new cache config is created if it does not exist
@@ -206,7 +206,7 @@ class ThrottleFilterTest extends TestCase
         $expected = [
             'className' => 'File',
             'prefix' => 'throttle_',
-            'duration' => '+1 minute'
+            'duration' => '+1 minute',
         ];
         $this->assertEquals($expected, Cache::getConfig('throttle'));
 
@@ -226,7 +226,7 @@ class ThrottleFilterTest extends TestCase
         // Make sure short cache engine names get resolved properly
         Cache::drop('default');
         Cache::setConfig('default', [
-            'className' => 'File'
+            'className' => 'File',
         ]);
         $expected = 'File';
         $result = $reflection->method->invokeArgs($filter, [new ServerRequest()]);
@@ -235,7 +235,7 @@ class ThrottleFilterTest extends TestCase
         // Make sure fully namespaced cache engine names get resolved properly
         Cache::drop('default');
         Cache::setConfig('default', [
-            'className' => 'Cake\Cache\Engine\FileEngine'
+            'className' => 'Cake\Cache\Engine\FileEngine',
         ]);
         $expected = 'File';
         $result = $reflection->method->invokeArgs($filter, [new ServerRequest()]);
@@ -250,7 +250,7 @@ class ThrottleFilterTest extends TestCase
         Cache::drop('throttle');
         Cache::setConfig('throttle', [
             'className' => $this->engineClass,
-            'prefix' => 'throttle_'
+            'prefix' => 'throttle_',
         ]);
 
         $filter = new ThrottleFilter();
@@ -300,7 +300,7 @@ class ThrottleFilterTest extends TestCase
     {
         // test disabled headers, should return null
         $filter = new ThrottleFilter([
-            'headers' => false
+            'headers' => false,
         ]);
         $reflection = $this->getReflection($filter, '_setHeaders');
         $result = $reflection->method->invokeArgs($filter, [new Response()]);
