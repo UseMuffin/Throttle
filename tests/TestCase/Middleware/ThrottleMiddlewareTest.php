@@ -309,17 +309,17 @@ class ThrottleMiddlewareTest extends TestCase
         $invalidFunctions = [
             function () {
             },
-            function ($param1, $param2) {
+            function ($param1) {
             },
-            function () {
+            function ($param) {
 
                 return null;
             },
-            function () {
+            function ($param) {
 
                 return -1;
             },
-            function () {
+            function ($param) {
 
                 return "string";
             },
@@ -336,9 +336,7 @@ class ThrottleMiddlewareTest extends TestCase
 
         foreach ($invalidFunctions as $invalidFunction) {
             $middleware = new ThrottleMiddleware([
-                'weight' => function ($request) {
-                    return null;
-                },
+                'weight' => $invalidFunction,
             ]);
             $this->assertEquals(1, $reflection->method->invokeArgs($middleware, [new ServerRequest()]));
         }
