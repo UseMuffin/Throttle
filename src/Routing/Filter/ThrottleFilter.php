@@ -26,14 +26,14 @@ class ThrottleFilter extends DispatcherFilter
     /**
      * beforeDispatch.
      *
-     * @param \Cake\Event\Event $event Event instance
+     * @param  \Cake\Event\Event $event Event instance
      * @return mixed \Cake\Http\Response when limit is reached, void otherwise
      */
     public function beforeDispatch(Event $event)
     {
         $this->_setIdentifier($event->getData('request'));
         $this->_initCache();
-        $this->_count = $this->_touch();
+        $this->_count = $this->_touch($event->getData('request'));
 
         $config = $this->getConfig();
 
@@ -52,11 +52,13 @@ class ThrottleFilter extends DispatcherFilter
 
         // client has reached rate limit
         $event->stopPropagation();
-        $response = new Response([
+        $response = new Response(
+            [
             'body' => $message,
             'status' => 429,
             'type' => $config['response']['type']
-        ]);
+            ]
+        );
 
         if (is_array($config['response']['headers'])) {
             foreach ($config['response']['headers'] as $name => $value) {
@@ -70,7 +72,7 @@ class ThrottleFilter extends DispatcherFilter
     /**
      * afterDispatch.
      *
-     * @param \Cake\Event\Event $event Event instance
+     * @param  \Cake\Event\Event $event Event instance
      * @return \Cake\Http\Response Response instance
      */
     public function afterDispatch(Event $event)

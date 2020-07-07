@@ -23,7 +23,8 @@ trait ThrottleTrait
             'limit' => 'X-RateLimit-Limit',
             'remaining' => 'X-RateLimit-Remaining',
             'reset' => 'X-RateLimit-Reset',
-        ]
+        ],
+        'weight' => 1
     ];
 
     /**
@@ -72,7 +73,7 @@ trait ThrottleTrait
      * Sets the identifier class property. Uses Throttle default IP address
      * based identifier unless a callable alternative is passed.
      *
-     * @param \Psr\Http\Message\ServerRequestInterface|\Cake\Http\ServerRequest $request RequestInterface instance
+     * @param  \Psr\Http\Message\ServerRequestInterface|\Cake\Http\ServerRequest $request RequestInterface instance
      * @return void
      * @throws \InvalidArgumentException
      */
@@ -93,11 +94,13 @@ trait ThrottleTrait
     protected function _initCache()
     {
         if (!Cache::getConfig(static::$cacheConfig)) {
-            Cache::setConfig(static::$cacheConfig, [
+            Cache::setConfig(
+                static::$cacheConfig, [
                 'className' => $this->_getDefaultCacheConfigClassName(),
                 'prefix' => static::$cacheConfig . '_' . $this->_identifier,
                 'duration' => $this->getConfig('interval'),
-            ]);
+                ]
+            );
         }
     }
 
@@ -124,15 +127,18 @@ trait ThrottleTrait
     }
 
     /**
-     * Atomically updates cache using default CakePHP increment offset 1.
+     * Atomically updates cache using CakePHP increment with configured value of 'weight',
+     * which can be also callable function, allowing for different rate-limit exhaustion speed,
+     * based on the request context
      *
      * Please note that the cache key needs to be initialized to prevent
      * increment() failing on 0. A separate cache key is created to store
      * the interval expiration time in epoch.
      *
+     * @param  \Psr\Http\Message\ServerRequestInterface|\Cake\Http\ServerRequest|null $request RequestInterface instance
      * @return mixed
      */
-    protected function _touch()
+    protected function _touch($request)
     {
         if (Cache::read($this->_identifier, static::$cacheConfig) === false) {
             Cache::write($this->_identifier, 0, static::$cacheConfig);
@@ -143,7 +149,32 @@ trait ThrottleTrait
             );
         }
 
-        return Cache::increment($this->_identifier, 1, static::$cacheConfig);
+        return Cache::increment($this->_identifier, $this->_getRequestWeight($request), static::$cacheConfig);
+    }
+
+    /**
+     * Returns configured weight, or result from configured callable if it returns positive integer,
+     * otherwise returns 1
+     *
+     * @param  \Psr\Http\Message\ServerRequestInterface|\Cake\Http\ServerRequest|null $request RequestInterface instance
+     * @return int
+     */
+    protected function _getRequestWeight($request)
+    {
+        $configWeight = $this->getConfig('weight');
+
+        if (empty($request) || (!is_int($configWeight) && !is_callable($configWeight))) {
+            // allow only integer or callable configurations
+            return 1;
+        }
+
+        if (is_int($configWeight)) {
+            return $configWeight;
+        }
+
+        $weight = $configWeight($request);
+        // allow callable to rate request with zero, meaning request won't raise the current counter
+        return is_int($weight) && $weight >= 0 ? $weight : 1;
     }
 
     /**
@@ -159,7 +190,7 @@ trait ThrottleTrait
     /**
      * Extends response with X-headers containing rate limiting information.
      *
-     * @param \Psr\Http\Message\ResponseInterface|\Cake\Network\Response $response ResponseInterface instance
+     * @param  \Psr\Http\Message\ResponseInterface|\Cake\Network\Response $response ResponseInterface instance
      * @return \Psr\Http\Message\ResponseInterface
      */
     protected function _setHeaders($response)

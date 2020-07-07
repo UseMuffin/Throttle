@@ -29,4 +29,5 @@ if (file_exists($root . '/config/bootstrap.php')) {
 
 require $root . '/vendor/cakephp/cakephp/tests/bootstrap.php';
 
-\Cake\Core\Plugin::load('Muffin/Throttle', ['path' => dirname(dirname(__FILE__)) . DS]);
+Cake\Core\Plugin::getCollection()->add(new \Muffin\Throttle\Plugin());
+//\Cake\Core\Plugin::load('Muffin/Throttle', ['path' => dirname(dirname(__FILE__)) . DS]);

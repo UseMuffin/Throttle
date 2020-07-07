@@ -33,16 +33,16 @@ class ThrottleMiddleware
     /**
      * Called when the class is used as a function
      *
-     * @param \Cake\Http\ServerRequest $request Request object
-     * @param \Cake\Http\Response $response Response object
-     * @param callable $next Next class in middleware
+     * @param  \Cake\Http\ServerRequest $request  Request object
+     * @param  \Cake\Http\Response      $response Response object
+     * @param  callable                 $next     Next class in middleware
      * @return \Psr\Http\Message\ResponseInterface
      */
     public function __invoke(ServerRequest $request, Response $response, callable $next)
     {
         $this->_setIdentifier($request);
         $this->_initCache();
-        $this->_count = $this->_touch();
+        $this->_count = $this->_touch($request);
 
         $config = $this->getConfig();
 
