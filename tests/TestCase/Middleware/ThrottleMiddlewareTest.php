@@ -1,9 +1,11 @@
 <?php
+
 namespace Muffin\Throttle\Test\TestCase\Middleware;
 
 use Cake\Cache\Cache;
 use Cake\Cache\Engine\ApcEngine;
 use Cake\Cache\Engine\ApcuEngine;
+use Cake\Core\Configure;
 use Cake\Http\Response;
 use Cake\Http\ServerRequest;
 use Cake\TestSuite\TestCase;
@@ -268,6 +270,61 @@ class ThrottleMiddlewareTest extends TestCase
 
         Cache::delete('test-identifier', 'throttle');
         Cache::drop('throttle');
+    }
+
+    public function testGetRequestWeightMethod()
+    {
+        $middleware = new ThrottleMiddleware();
+        $reflection = $this->getReflection($middleware, '_getRequestWeight');
+
+        $incorrectParams = [
+            [null],
+            ['a'],
+            [''],
+            [false],
+            [true],
+            []
+        ];
+
+        foreach ($incorrectParams as $incorrectParam) {
+            $this->assertEquals(1, $reflection->method->invokeArgs($middleware, $incorrectParam));
+        }
+
+        $middleware = new ThrottleMiddleware([
+            'weight' => function ($request) {
+                if (!($request instanceof ServerRequest)) {
+                    return 1;
+                }
+                return 5;
+            }
+        ]);
+
+        $this->assertEquals(1, $reflection->method->invokeArgs($middleware, []));
+        // handle user function properly
+        $this->assertEquals(5, $reflection->method->invokeArgs($middleware, [new ServerRequest()]));
+        // handle invalid request param provided
+        $this->assertEquals(1, $reflection->method->invokeArgs($middleware, [new Response()]));
+
+        $invalidFunctions = [
+            function (){ },
+            function ($param1, $param2) { },
+            function () { return null; },
+            function () { return -1; },
+            function () { return "string"; },
+            function ($param) { return $param; },
+            function ($param) { return $param->clientIp(); },
+            null,
+        ];
+
+        foreach($invalidFunctions as $invalidFunction) {
+            $middleware = new ThrottleMiddleware([
+                'weight' => function ($request) {
+                    return null;
+                }
+            ]);
+            $this->assertEquals(1, $reflection->method->invokeArgs($middleware, [new ServerRequest()]));
+        }
+
     }
 
     /**

@@ -2,6 +2,7 @@
 namespace Muffin\Throttle;
 
 use Cake\Cache\Cache;
+use Cake\Http\ServerRequest;
 
 trait ThrottleTrait
 {
@@ -138,7 +139,7 @@ trait ThrottleTrait
      * @param  \Psr\Http\Message\ServerRequestInterface|\Cake\Http\ServerRequest|null $request RequestInterface instance
      * @return mixed
      */
-    protected function _touch($request)
+    protected function _touch($request = null)
     {
         if (Cache::read($this->_identifier, static::$cacheConfig) === false) {
             Cache::write($this->_identifier, 0, static::$cacheConfig);
@@ -159,11 +160,16 @@ trait ThrottleTrait
      * @param  \Psr\Http\Message\ServerRequestInterface|\Cake\Http\ServerRequest|null $request RequestInterface instance
      * @return int
      */
-    protected function _getRequestWeight($request)
+    protected function _getRequestWeight($request = null)
     {
         $configWeight = $this->getConfig('weight');
 
-        if (empty($request) || (!is_int($configWeight) && !is_callable($configWeight))) {
+        if (
+            // classify simple issues with configuration
+            empty($request) || (!is_int($configWeight) && !is_callable($configWeight))
+            // classify request param contents
+            || !($request instanceof ServerRequest)
+        ) {
             // allow only integer or callable configurations
             return 1;
         }
