@@ -216,7 +216,9 @@ class ThrottleMiddleware implements MiddlewareInterface
         }
 
         if (!is_int($configWeight) || (is_int($configWeight) && $configWeight < 0)) {
-            throw new InvalidArgumentException('Throttle requestWeight option, or number returned by callback, must be >= 0');
+            throw new InvalidArgumentException(
+                'Throttle requestWeight option, or number returned by callback, must be >= 0'
+            );
         }
 
         return $configWeight;
