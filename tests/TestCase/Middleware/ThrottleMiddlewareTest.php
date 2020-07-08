@@ -9,6 +9,7 @@ use Cake\Http\Response;
 use Cake\Http\ServerRequest;
 use Cake\TestSuite\TestCase;
 use Muffin\Throttle\Middleware\ThrottleMiddleware;
+use Psr\Http\Message\ServerRequestInterface;
 use stdClass;
 use TestApp\Http\TestRequestHandler;
 
@@ -243,13 +244,13 @@ class ThrottleMiddlewareTest extends TestCase
         $reflection->property->setValue($middleware, 'test-identifier');
 
         // initial hit should create cache count 1 + expiration key with epoch
-        $reflection->method->invokeArgs($middleware, []);
+        $reflection->method->invokeArgs($middleware, [new ServerRequest()]);
         $this->assertEquals(1, Cache::read('test-identifier', 'throttle'));
         $this->assertTrue((bool)Cache::read('test-identifier_expires', 'throttle'));
         $expires = Cache::read('test-identifier_expires', 'throttle');
 
         // second hit should increase counter but have identical expires key
-        $reflection->method->invokeArgs($middleware, []);
+        $reflection->method->invokeArgs($middleware, [new ServerRequest()]);
         $this->assertEquals(2, Cache::read('test-identifier', 'throttle'));
         $this->assertEquals($expires, Cache::read('test-identifier_expires', 'throttle'));
 
@@ -315,6 +316,72 @@ class ThrottleMiddlewareTest extends TestCase
         $reflection->property->setValue($middleware, 11);
         $result = $reflection->method->invokeArgs($middleware, []);
         $this->assertEquals('0', $result);
+    }
+
+    public function testConfigurableRequestWeight(): void
+    {
+        $middleware = new ThrottleMiddleware([
+            'request_weight' => function (ServerRequestInterface $request) {
+                if (!($request instanceof ServerRequest)) {
+                    return 1;
+                }
+
+                return 5;
+            },
+        ]);
+        $reflection = $this->getReflection($middleware, '_getRequestWeight');
+
+        $this->assertEquals(5, $reflection->method->invokeArgs($middleware, [new ServerRequest()]));
+
+        $invalidFunctions = [
+            function () {
+            },
+            function ($param1) {
+            },
+            function ($param) {
+
+                return null;
+            },
+            function ($param) {
+
+                return -1;
+            },
+            function ($param) {
+
+                return 'string';
+            },
+            function ($param) {
+
+                return $param;
+            },
+            function ($param) {
+
+                return $param->clientIp();
+            },
+            null,
+        ];
+
+        foreach ($invalidFunctions as $invalidFunction) {
+            $middleware = new ThrottleMiddleware([
+                'request_weight' => $invalidFunction,
+            ]);
+            $reflection = $this->getReflection($middleware, '_getRequestWeight');
+            $this->assertEquals(1, $reflection->method->invokeArgs($middleware, [new ServerRequest()]));
+        }
+
+        $invalidConfigurations = [
+            'string',
+            false,
+            -1,
+        ];
+
+        foreach ($invalidConfigurations as $invalidConfiguration) {
+            $middleware = new ThrottleMiddleware([
+                'request_weight' => $invalidConfiguration,
+            ]);
+            $reflection = $this->getReflection($middleware, '_getRequestWeight');
+            $this->assertEquals(1, $reflection->method->invokeArgs($middleware, [new ServerRequest()]));
+        }
     }
 
     /**

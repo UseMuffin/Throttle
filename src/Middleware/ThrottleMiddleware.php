@@ -35,6 +35,7 @@ class ThrottleMiddleware implements MiddlewareInterface
             'remaining' => 'X-RateLimit-Remaining',
             'reset' => 'X-RateLimit-Reset',
         ],
+        'request_weight' => 1,
     ];
 
     /**
@@ -90,7 +91,7 @@ class ThrottleMiddleware implements MiddlewareInterface
     {
         $this->_setIdentifier($request);
         $this->_initCache();
-        $this->_count = $this->_touch();
+        $this->_count = $this->_touch($request);
 
         $config = $this->getConfig();
 
@@ -182,9 +183,10 @@ class ThrottleMiddleware implements MiddlewareInterface
      * increment() failing on 0. A separate cache key is created to store
      * the interval expiration time in epoch.
      *
+     * @param \Psr\Http\Message\ServerRequestInterface $request ServerRequestInterface instance
      * @return int
      */
-    protected function _touch(): int
+    protected function _touch(ServerRequestInterface $request): int
     {
         if (Cache::read($this->_identifier, static::$cacheConfig) === null) {
             Cache::write($this->_identifier, 0, static::$cacheConfig);
@@ -195,7 +197,29 @@ class ThrottleMiddleware implements MiddlewareInterface
             );
         }
 
-        return Cache::increment($this->_identifier, 1, static::$cacheConfig) ?: 0;
+        return Cache::increment($this->_identifier, $this->_getRequestWeight($request), static::$cacheConfig) ?: 0;
+    }
+
+    /**
+     * Returns configured weight of each request, result of callable, or 1 when option
+     * is misconfigured or the callable did not return integer >= 0
+     *
+     * @param \Psr\Http\Message\ServerRequestInterface $request ServerRequestInterface instance
+     * @return int
+     */
+    protected function _getRequestWeight(ServerRequestInterface $request): int
+    {
+        $configWeight = $this->getConfig('request_weight');
+
+        if (!is_int($configWeight) && !is_callable($configWeight)) {
+            return 1;
+        }
+
+        if (is_callable($configWeight)) {
+            $configWeight = $configWeight($request);
+        }
+
+        return is_int($configWeight) && $configWeight >= 0 ? $configWeight : 1;
     }
 
     /**
