@@ -2,4 +2,3 @@
 /plugins
 /vendor
 .phpunit.result.cache
-/.idea

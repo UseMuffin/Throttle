@@ -8,6 +8,7 @@ use Cake\Cache\Engine\ApcuEngine;
 use Cake\Http\Response;
 use Cake\Http\ServerRequest;
 use Cake\TestSuite\TestCase;
+use InvalidArgumentException;
 use Muffin\Throttle\Middleware\ThrottleMiddleware;
 use Psr\Http\Message\ServerRequestInterface;
 use stdClass;
@@ -321,7 +322,7 @@ class ThrottleMiddlewareTest extends TestCase
     public function testConfigurableRequestWeight(): void
     {
         $middleware = new ThrottleMiddleware([
-            'request_weight' => function (ServerRequestInterface $request) {
+            'requestWeight' => function (ServerRequestInterface $request) {
                 if (!($request instanceof ServerRequest)) {
                     return 1;
                 }
@@ -363,10 +364,11 @@ class ThrottleMiddlewareTest extends TestCase
 
         foreach ($invalidFunctions as $invalidFunction) {
             $middleware = new ThrottleMiddleware([
-                'request_weight' => $invalidFunction,
+                'requestWeight' => $invalidFunction,
             ]);
             $reflection = $this->getReflection($middleware, '_getRequestWeight');
-            $this->assertEquals(1, $reflection->method->invokeArgs($middleware, [new ServerRequest()]));
+            $this->expectException(InvalidArgumentException::class);
+            $reflection->method->invokeArgs($middleware, [new ServerRequest()]);
         }
 
         $invalidConfigurations = [
@@ -377,10 +379,11 @@ class ThrottleMiddlewareTest extends TestCase
 
         foreach ($invalidConfigurations as $invalidConfiguration) {
             $middleware = new ThrottleMiddleware([
-                'request_weight' => $invalidConfiguration,
+                'requestWeight' => $invalidConfiguration,
             ]);
             $reflection = $this->getReflection($middleware, '_getRequestWeight');
-            $this->assertEquals(1, $reflection->method->invokeArgs($middleware, [new ServerRequest()]));
+            $this->expectException(InvalidArgumentException::class);
+            $reflection->method->invokeArgs($middleware, [new ServerRequest()]);
         }
     }
 

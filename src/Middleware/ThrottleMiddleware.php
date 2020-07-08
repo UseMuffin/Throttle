@@ -35,7 +35,7 @@ class ThrottleMiddleware implements MiddlewareInterface
             'remaining' => 'X-RateLimit-Remaining',
             'reset' => 'X-RateLimit-Reset',
         ],
-        'request_weight' => 1,
+        'requestWeight' => 1,
     ];
 
     /**
@@ -209,17 +209,17 @@ class ThrottleMiddleware implements MiddlewareInterface
      */
     protected function _getRequestWeight(ServerRequestInterface $request): int
     {
-        $configWeight = $this->getConfig('request_weight');
-
-        if (!is_int($configWeight) && !is_callable($configWeight)) {
-            return 1;
-        }
+        $configWeight = $this->getConfig('requestWeight');
 
         if (is_callable($configWeight)) {
             $configWeight = $configWeight($request);
         }
 
-        return is_int($configWeight) && $configWeight >= 0 ? $configWeight : 1;
+        if (!is_int($configWeight) || (is_int($configWeight) && $configWeight < 0)) {
+            throw new InvalidArgumentException('Throttle requestWeight option, or number returned by callback, must be >= 0');
+        }
+
+        return $configWeight;
     }
 
     /**
