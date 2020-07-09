@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace Muffin\Throttle\Test\TestCase\Middleware;
 
 use Cake\Cache\Cache;
-use Cake\Cache\Engine\ApcuEngine;
+use Cake\Cache\Engine\FileEngine;
 use Cake\Http\Response;
 use Cake\Http\ServerRequest;
 use Cake\TestSuite\TestCase;
@@ -14,24 +14,7 @@ use TestApp\Http\TestRequestHandler;
 
 class ThrottleMiddlewareTest extends TestCase
 {
-    protected $engineClass;
-
-    /**
-     * setUp method
-     *
-     * @return void
-     */
-    public function setUp(): void
-    {
-        parent::setUp();
-
-        $this->skipIf(!function_exists('apcu_store'), 'APCu is not installed or configured properly.');
-        if ((PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg')) {
-            $this->skipIf(!ini_get('apc.enable_cli'), 'APC is not enabled for the CLI.');
-        }
-
-        $this->engineClass = ApcuEngine::class;
-    }
+    protected $engineClass = FileEngine::class;
 
     /**
      * Test __construct
@@ -43,8 +26,8 @@ class ThrottleMiddlewareTest extends TestCase
 
         $this->assertEquals('Rate limit exceeded', $result['response']['body']);
         $this->assertEquals([], $result['response']['headers']);
-        $this->assertEquals('+1 minute', $result['interval']);
-        $this->assertEquals(10, $result['limit']);
+        $this->assertEquals(60, $result['period']);
+        $this->assertEquals(60, $result['limit']);
         $this->assertTrue(is_callable($result['identifier']));
 
         $expectedHeaders = [
@@ -80,6 +63,7 @@ class ThrottleMiddlewareTest extends TestCase
             'className' => $this->engineClass,
             'prefix' => 'throttle_',
         ]);
+        Cache::clear('throttle');
 
         $middleware = new ThrottleMiddleware([
             'limit' => 1,
@@ -126,24 +110,19 @@ class ThrottleMiddlewareTest extends TestCase
         $this->assertInstanceOf(Response::class, $result);
         $this->assertEquals('application/json', $result->getType());
         $this->assertEquals(2, count(array_intersect($expectedHeaders, array_keys($result->getHeaders()))));
+        $this->assertTrue(is_numeric($result->getHeaderLine('X-RateLimit-Reset')));
         $this->assertEquals(429, $result->getStatusCode());
-    }
 
-    /**
-     * Using the File Storage cache engine should throw a LogicException.
-     */
-    public function testFileCacheException(): void
-    {
-        $this->expectException(\TypeError::class);
+        $result2 = $middleware->process(
+            $request,
+            new TestRequestHandler()
+        );
+        $this->assertEquals(429, $result2->getStatusCode());
 
-        Cache::setConfig('file', [
-            'className' => 'Cake\Cache\Engine\FileEngine',
-            'prefix' => 'throttle_',
-        ]);
-
-        $middleware = new ThrottleMiddleware();
-        $reflection = $this->getReflection($middleware, '_touch');
-        $reflection->method->invokeArgs($middleware, [new ServerRequest()]);
+        $this->assertSame(
+            $result->getHeaderLine('X-RateLimit-Reset'),
+            $result2->getHeaderLine('X-RateLimit-Reset')
+        );
     }
 
     /**
@@ -189,7 +168,6 @@ class ThrottleMiddlewareTest extends TestCase
         $expected = [
             'className' => 'File',
             'prefix' => 'throttle_',
-            'duration' => '+1 minute',
         ];
 
         $this->assertEquals($expected, Cache::getConfig('throttle'));
@@ -225,96 +203,6 @@ class ThrottleMiddlewareTest extends TestCase
         $expected = 'File';
         $result = $reflection->method->invokeArgs($middleware, [new ServerRequest()]);
         $this->assertEquals($expected, $result);
-    }
-
-    /**
-     * Test atomic updating client hits
-     */
-    public function testTouchMethod(): void
-    {
-        Cache::drop('throttle');
-        Cache::setConfig('throttle', [
-            'className' => $this->engineClass,
-            'prefix' => 'throttle_',
-        ]);
-
-        $middleware = new ThrottleMiddleware();
-        $reflection = $this->getReflection($middleware, '_touch', '_identifier');
-        $reflection->property->setValue($middleware, 'test-identifier');
-
-        // initial hit should create cache count 1 + expiration key with epoch
-        $reflection->method->invokeArgs($middleware, []);
-        $this->assertEquals(1, Cache::read('test-identifier', 'throttle'));
-        $this->assertTrue((bool)Cache::read('test-identifier_expires', 'throttle'));
-        $expires = Cache::read('test-identifier_expires', 'throttle');
-
-        // second hit should increase counter but have identical expires key
-        $reflection->method->invokeArgs($middleware, []);
-        $this->assertEquals(2, Cache::read('test-identifier', 'throttle'));
-        $this->assertEquals($expires, Cache::read('test-identifier_expires', 'throttle'));
-
-        Cache::delete('test-identifier', 'throttle');
-        Cache::drop('throttle');
-    }
-
-    /**
-     * Test if proper string is returned for use as cache expiration key.
-     */
-    public function testGetCacheExpirationKeyMethod(): void
-    {
-        $middelware = new ThrottleMiddleware();
-        $reflection = $this->getReflection($middelware, '_getCacheExpirationKey', '_identifier');
-
-        // test ip-adress based expiration key (Throttle default)
-        $reflection->property->setValue($middelware, '10.33.10.10');
-        $expected = '10.33.10.10_expires';
-        $result = $reflection->method->invokeArgs($middelware, []);
-        $this->assertEquals($expected, $result);
-
-        // test long JWT Bearer Token based expiration key
-        $reflection->property->setValue($middelware, 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6IjJiMzdhMzVhLTAxNWEtNGUzMi04YTUyLTYzZjQ3ODBkNjY1NCIsImV4cCI6MTQzOTAzMjQ5OH0.U6PkSf6IfSc-o-14UiGy4Rbr9kqqETCKOclf92PXwHY');
-        $expected = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6IjJiMzdhMzVhLTAxNWEtNGUzMi04YTUyLTYzZjQ3ODBkNjY1NCIsImV4cCI6MTQzOTAzMjQ5OH0.U6PkSf6IfSc-o-14UiGy4Rbr9kqqETCKOclf92PXwHY_expires';
-        $result = $reflection->method->invokeArgs($middelware, []);
-        $this->assertEquals($expected, $result);
-    }
-
-    /**
-     * Test x-headers
-     */
-    public function testSetHeadersMethod(): void
-    {
-        // test disabled headers, should return null
-        $middleware = new ThrottleMiddleware([
-            'headers' => false,
-        ]);
-        $reflection = $this->getReflection($middleware, '_setHeaders');
-        $result = $reflection->method->invokeArgs($middleware, [new Response()]);
-        $this->assertInstanceOf(Response::class, $result);
-    }
-
-    /**
-     * Test x-headers
-     */
-    public function testRemainingConnectionsMethod(): void
-    {
-        $middleware = new ThrottleMiddleware();
-        $reflection = $this->getReflection($middleware, '_getRemainingConnections', '_count');
-
-        $reflection->property->setValue($middleware, 7);
-        $result = $reflection->method->invokeArgs($middleware, []);
-        $this->assertEquals('3', $result);
-
-        $reflection->property->setValue($middleware, 0);
-        $result = $reflection->method->invokeArgs($middleware, []);
-        $this->assertEquals('10', $result);
-
-        $reflection->property->setValue($middleware, 10);
-        $result = $reflection->method->invokeArgs($middleware, []);
-        $this->assertEquals('0', $result);
-
-        $reflection->property->setValue($middleware, 11);
-        $result = $reflection->method->invokeArgs($middleware, []);
-        $this->assertEquals('0', $result);
     }
 
     /**

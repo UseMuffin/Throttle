@@ -25,11 +25,11 @@ class ThrottleMiddleware implements MiddlewareInterface
     protected $_defaultConfig = [
         'response' => [
             'body' => 'Rate limit exceeded',
-            'type' => 'text/html',
+            'type' => 'text/plain',
             'headers' => [],
         ],
-        'interval' => '+1 minute',
-        'limit' => 10,
+        'period' => 60,
+        'limit' => 60,
         'headers' => [
             'limit' => 'X-RateLimit-Limit',
             'remaining' => 'X-RateLimit-Remaining',
@@ -45,13 +45,6 @@ class ThrottleMiddleware implements MiddlewareInterface
     public static $cacheConfig = 'throttle';
 
     /**
-     * Cache expiration key suffix
-     *
-     * @var string
-     */
-    public static $cacheExpirationSuffix = 'expires';
-
-    /**
      * Unique client identifier
      *
      * @var string
@@ -59,14 +52,7 @@ class ThrottleMiddleware implements MiddlewareInterface
     protected $_identifier;
 
     /**
-     * Number of connections after increment
-     *
-     * @var int
-     */
-    protected $_count;
-
-    /**
-     * ThrottleMiddleware constructor.
+     * Throttle Middleware constructor.
      *
      * @param array $config Configuration options
      */
@@ -80,7 +66,7 @@ class ThrottleMiddleware implements MiddlewareInterface
     }
 
     /**
-     * Called when the class is used as a function
+     * Process the request.
      *
      * @param \Psr\Http\Message\ServerRequestInterface $request The request.
      * @param \Psr\Http\Server\RequestHandlerInterface $handler The request handler.
@@ -90,38 +76,105 @@ class ThrottleMiddleware implements MiddlewareInterface
     {
         $this->_setIdentifier($request);
         $this->_initCache();
-        $this->_count = $this->_touch();
 
-        $config = $this->getConfig();
+        $throttleInfo = $this->_getThrottle($request);
+        $rateLimit = $this->_rateLimit($throttleInfo['key'], $throttleInfo['limit'], $throttleInfo['period']);
 
-        if ($this->_count > $config['limit']) {
-            $response = new Response();
-
-            if (is_array($config['response']['headers'])) {
-                foreach ($config['response']['headers'] as $name => $value) {
-                    $response = $response->withHeader($name, $value);
-                }
-            }
-
-            if (isset($config['message'])) {
-                $message = $config['message'];
-            } else {
-                $message = $config['response']['body'];
-            }
-
-            return $response
-                ->withStatus(429)
-                ->withType($config['response']['type'])
-                ->withStringBody($message);
+        if ($rateLimit['exceeded']) {
+            return $this->_returnErrorResponse($rateLimit);
         }
 
         $response = $handler->handle($request);
 
-        return $this->_setHeaders($response);
+        return $this->_setHeaders($response, $rateLimit);
     }
 
     /**
-     * Sets the identifier class property. Uses Throttle default IP address
+     * Return error response when rate limit is exceeded.
+     *
+     * @param array $rateLimit Rate limiting info.
+     * @return \Psr\Http\Message\ResponseInterface
+     */
+    protected function _returnErrorResponse(array $rateLimit): ResponseInterface
+    {
+        $config = $this->getConfig();
+
+        $response = new Response();
+
+        if (is_array($config['response']['headers'])) {
+            foreach ($config['response']['headers'] as $name => $value) {
+                $response = $response->withHeader($name, $value);
+            }
+        }
+
+        if (isset($config['message'])) {
+            $message = $config['message'];
+        } else {
+            $message = $config['response']['body'];
+        }
+
+        $response = $response
+            ->withStatus(429)
+            ->withType($config['response']['type'])
+            ->withStringBody($message);
+
+        return $this->_setHeaders($response, $rateLimit);
+    }
+
+    /**
+     * Get throttling data.
+     *
+     * @param \Psr\Http\Message\ServerRequestInterface $request Server request instance.
+     * @return array
+     * @psalm-return {key: string, limit: int, period: int}
+     */
+    protected function _getThrottle(ServerRequestInterface $request): array
+    {
+        return [
+            'key' => $this->_identifier,
+            'limit' => $this->getConfig('limit'),
+            'period' => $this->getConfig('period'),
+        ];
+    }
+
+    /**
+     * Rate limit the request.
+     *
+     * @param string $key Cache key.
+     * @param int $limit Limit.
+     * @param int $period Period.
+     * @return array
+     * @psalm-return {limit: int, remaining: int, reset: int, exceeded: bool}
+     */
+    protected function _rateLimit(string $key, int $limit, int $period): array
+    {
+        $currentTime = time();
+        $ttl = $period;
+        $cacheEngine = Cache::pool(static::$cacheConfig);
+
+        /** @psalm-var array{limit: int, remaining: int, reset: int}|null $rateLimit */
+        $rateLimit = $cacheEngine->get($key);
+
+        if ($rateLimit === null || $currentTime > $rateLimit['reset']) {
+            $rateLimit = [
+                'limit' => $limit,
+                'remaining' => $limit,
+                'reset' => $currentTime + $period,
+            ];
+        } elseif ($rateLimit['remaining'] < 1) {
+            return $rateLimit + ['exceeded' => true];
+        }
+
+        $rateLimit['remaining'] = $rateLimit['remaining'] - 1;
+        $ttl = $rateLimit['reset'] - $currentTime;
+
+        $cacheEngine->set($key, $rateLimit, $ttl);
+
+        return $rateLimit + ['exceeded' => false];
+    }
+
+    /**
+     * Sets the identifier class property. By default used IP address
      * based identifier unless a callable alternative is passed.
      *
      * @param \Psr\Http\Message\ServerRequestInterface $request RequestInterface instance
@@ -148,7 +201,6 @@ class ThrottleMiddleware implements MiddlewareInterface
             Cache::setConfig(static::$cacheConfig, [
                 'className' => $this->_getDefaultCacheConfigClassName(),
                 'prefix' => static::$cacheConfig . '_' . $this->_identifier,
-                'duration' => $this->getConfig('interval'),
             ]);
         }
     }
@@ -176,45 +228,13 @@ class ThrottleMiddleware implements MiddlewareInterface
     }
 
     /**
-     * Atomically updates cache using default CakePHP increment offset 1.
-     *
-     * Please note that the cache key needs to be initialized to prevent
-     * increment() failing on 0. A separate cache key is created to store
-     * the interval expiration time in epoch.
-     *
-     * @return int
-     */
-    protected function _touch(): int
-    {
-        if (Cache::read($this->_identifier, static::$cacheConfig) === null) {
-            Cache::write($this->_identifier, 0, static::$cacheConfig);
-            Cache::write(
-                $this->_getCacheExpirationKey(),
-                strtotime($this->getConfig('interval'), time()),
-                static::$cacheConfig
-            );
-        }
-
-        return Cache::increment($this->_identifier, 1, static::$cacheConfig) ?: 0;
-    }
-
-    /**
-     * Returns cache key holding the epoch cache expiration timestamp.
-     *
-     * @return string Cache key holding cache expiration in epoch.
-     */
-    protected function _getCacheExpirationKey(): string
-    {
-        return $this->_identifier . '_' . static::$cacheExpirationSuffix;
-    }
-
-    /**
      * Extends response with X-headers containing rate limiting information.
      *
      * @param \Psr\Http\Message\ResponseInterface $response ResponseInterface instance
+     * @param array $rateLimit Rate limiting info.
      * @return \Psr\Http\Message\ResponseInterface
      */
-    protected function _setHeaders(ResponseInterface $response): ResponseInterface
+    protected function _setHeaders(ResponseInterface $response, array $rateLimit): ResponseInterface
     {
         $headers = $this->getConfig('headers');
 
@@ -223,26 +243,8 @@ class ThrottleMiddleware implements MiddlewareInterface
         }
 
         return $response
-            ->withHeader($headers['limit'], (string)$this->getConfig('limit'))
-            ->withHeader($headers['remaining'], (string)$this->_getRemainingConnections())
-            ->withHeader(
-                $headers['reset'],
-                (string)Cache::read($this->_getCacheExpirationKey(), static::$cacheConfig)
-            );
-    }
-
-    /**
-     * Calculates the number of hits remaining before client reaches rate limit.
-     *
-     * @return int Number of remaining client hits, zero if limit is reached
-     */
-    protected function _getRemainingConnections(): int
-    {
-        $remaining = $this->getConfig('limit') - $this->_count;
-        if ($remaining <= 0) {
-            return 0;
-        }
-
-        return (int)$remaining;
+            ->withHeader($headers['limit'], (string)$rateLimit['limit'])
+            ->withHeader($headers['remaining'], (string)$rateLimit['remaining'])
+            ->withHeader($headers['reset'], (string)$rateLimit['reset']);
     }
 }
