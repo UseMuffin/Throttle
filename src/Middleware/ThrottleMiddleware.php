@@ -211,11 +211,11 @@ class ThrottleMiddleware implements MiddlewareInterface
     {
         $configWeight = $this->getConfig('requestWeight');
 
-        if (is_callable($configWeight)) {
+        if ($configWeight instanceof Closure) {
             $configWeight = $configWeight($request);
         }
 
-        if (!is_int($configWeight) || (is_int($configWeight) && $configWeight < 0)) {
+        if (!is_int($configWeight) || $configWeight < 0) {
             throw new InvalidArgumentException(
                 'Throttle requestWeight option, or number returned by callback, must be >= 0'
             );
