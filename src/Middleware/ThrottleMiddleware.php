@@ -81,7 +81,7 @@ class ThrottleMiddleware implements MiddlewareInterface
         $throttleInfo = $this->_getThrottle($request);
         $rateLimit = $this->_rateLimit($throttleInfo['key'], $throttleInfo['limit'], $throttleInfo['period']);
 
-        if ($rateLimit['exceeded']) {
+        if ($rateLimit['calls'] > $rateLimit['limit']) {
             return $this->_getErrorResponse($rateLimit);
         }
 
@@ -155,7 +155,7 @@ class ThrottleMiddleware implements MiddlewareInterface
      * @param int $limit Limit.
      * @param int $period Period.
      * @return array
-     * @psalm-return {limit: int, remaining: int, reset: int, exceeded: bool}
+     * @psalm-return {limit: int, calls: int, reset: int, exceeded: bool}
      */
     protected function _rateLimit(string $key, int $limit, int $period): array
     {
@@ -163,25 +163,26 @@ class ThrottleMiddleware implements MiddlewareInterface
         $ttl = $period;
         $cacheEngine = Cache::pool(static::$cacheConfig);
 
-        /** @psalm-var array{limit: int, remaining: int, reset: int}|null $rateLimit */
+        /** @psalm-var array{limit: int, calls: int, reset: int}|null $rateLimit */
         $rateLimit = $cacheEngine->get($key);
 
         if ($rateLimit === null || $currentTime > $rateLimit['reset']) {
             $rateLimit = [
                 'limit' => $limit,
-                'remaining' => $limit,
+                'calls' => 1,
                 'reset' => $currentTime + $period,
             ];
-        } elseif ($rateLimit['remaining'] < 1) {
-            return $rateLimit + ['exceeded' => true];
+        } else {
+            $rateLimit['calls']++;
         }
 
-        $rateLimit['remaining'] = $rateLimit['remaining'] - 1;
-        $ttl = $rateLimit['reset'] - $currentTime;
+        if ($rateLimit['calls'] <= $rateLimit['limit']) {
+            $ttl = $rateLimit['reset'] - $currentTime;
+        }
 
         $cacheEngine->set($key, $rateLimit, $ttl);
 
-        return $rateLimit + ['exceeded' => false];
+        return $rateLimit;
     }
 
     /**
@@ -253,9 +254,14 @@ class ThrottleMiddleware implements MiddlewareInterface
             return $response;
         }
 
+        $remaining = $rateLimit['limit'] - $rateLimit['calls'];
+        if ($remaining < 0) {
+            $remaining = 0;
+        }
+
         return $response
             ->withHeader($headers['limit'], (string)$rateLimit['limit'])
-            ->withHeader($headers['remaining'], (string)$rateLimit['remaining'])
+            ->withHeader($headers['remaining'], (string)$remaining)
             ->withHeader($headers['reset'], (string)$rateLimit['reset']);
     }
 }

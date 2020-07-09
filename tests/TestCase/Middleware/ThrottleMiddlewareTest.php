@@ -97,6 +97,7 @@ class ThrottleMiddlewareTest extends TestCase
         $this->assertInstanceOf(Response::class, $result);
         $this->assertEquals(200, $result->getStatusCode());
         $this->assertEquals(3, count(array_intersect($expectedHeaders, array_keys($result->getHeaders()))));
+        $this->assertSame('0', $result->getHeaderLine('X-RateLimit-Remaining'));
 
         $result = $middleware->process(
             $request,
@@ -112,6 +113,7 @@ class ThrottleMiddlewareTest extends TestCase
         $this->assertEquals('application/json', $result->getType());
         $this->assertEquals(2, count(array_intersect($expectedHeaders, array_keys($result->getHeaders()))));
         $this->assertTrue(is_numeric($result->getHeaderLine('X-RateLimit-Reset')));
+        $this->assertSame('0', $result->getHeaderLine('X-RateLimit-Remaining'));
         $this->assertEquals(429, $result->getStatusCode());
 
         $result2 = $middleware->process(
