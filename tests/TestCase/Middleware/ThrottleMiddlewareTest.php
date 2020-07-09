@@ -8,8 +8,8 @@ use Cake\Cache\Engine\FileEngine;
 use Cake\Http\Response;
 use Cake\Http\ServerRequest;
 use Cake\TestSuite\TestCase;
-use Muffin\Throttle\Dto\ThrottleInfo;
 use Muffin\Throttle\Middleware\ThrottleMiddleware;
+use Muffin\Throttle\ValueObject\ThrottleInfo;
 use stdClass;
 use TestApp\Http\TestRequestHandler;
 

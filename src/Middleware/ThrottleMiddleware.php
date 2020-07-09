@@ -8,8 +8,8 @@ use Cake\Core\InstanceConfigTrait;
 use Cake\Http\Response;
 use Closure;
 use InvalidArgumentException;
-use Muffin\Throttle\Dto\RateLimitInfo;
-use Muffin\Throttle\Dto\ThrottleInfo;
+use Muffin\Throttle\ValueObject\RateLimitInfo;
+use Muffin\Throttle\ValueObject\ThrottleInfo;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
@@ -95,7 +95,7 @@ class ThrottleMiddleware implements MiddlewareInterface
     /**
      * Return error response when rate limit is exceeded.
      *
-     * @param \Muffin\Throttle\Dto\RateLimitInfo $rateLimit Rate limiting info.
+     * @param \Muffin\Throttle\ValueObject\RateLimitInfo $rateLimit Rate limiting info.
      * @return \Psr\Http\Message\ResponseInterface
      */
     protected function _getErrorResponse(RateLimitInfo $rateLimit): ResponseInterface
@@ -130,7 +130,7 @@ class ThrottleMiddleware implements MiddlewareInterface
      * Get throttling data.
      *
      * @param \Psr\Http\Message\ServerRequestInterface $request Server request instance.
-     * @return \Muffin\Throttle\Dto\ThrottleInfo
+     * @return \Muffin\Throttle\ValueObject\ThrottleInfo
      */
     protected function _getThrottle(ServerRequestInterface $request): ThrottleInfo
     {
@@ -152,8 +152,8 @@ class ThrottleMiddleware implements MiddlewareInterface
     /**
      * Rate limit the request.
      *
-     * @param \Muffin\Throttle\Dto\ThrottleInfo $throttle Throttling info.
-     * @return \Muffin\Throttle\Dto\RateLimitInfo
+     * @param \Muffin\Throttle\ValueObject\ThrottleInfo $throttle Throttling info.
+     * @return \Muffin\Throttle\ValueObject\RateLimitInfo
      */
     protected function _rateLimit(ThrottleInfo $throttle): RateLimitInfo
     {
@@ -162,7 +162,7 @@ class ThrottleMiddleware implements MiddlewareInterface
         $ttl = $throttle->getPeriod();
         $cacheEngine = Cache::pool(static::$cacheConfig);
 
-        /** @var \Muffin\Throttle\Dto\RateLimitInfo|null $rateLimit */
+        /** @var \Muffin\Throttle\ValueObject\RateLimitInfo|null $rateLimit */
         $rateLimit = $cacheEngine->get($key);
 
         if ($rateLimit === null || $currentTime > $rateLimit->getResetTimestamp()) {
@@ -238,7 +238,7 @@ class ThrottleMiddleware implements MiddlewareInterface
      * Extends response with X-headers containing rate limiting information.
      *
      * @param \Psr\Http\Message\ResponseInterface $response ResponseInterface instance
-     * @param \Muffin\Throttle\Dto\RateLimitInfo $rateLimit Rate limiting info.
+     * @param \Muffin\Throttle\ValueObject\RateLimitInfo $rateLimit Rate limiting info.
      * @return \Psr\Http\Message\ResponseInterface
      */
     protected function _setHeaders(ResponseInterface $response, RateLimitInfo $rateLimit): ResponseInterface
