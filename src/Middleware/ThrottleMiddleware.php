@@ -82,7 +82,7 @@ class ThrottleMiddleware implements MiddlewareInterface
         $rateLimit = $this->_rateLimit($throttleInfo['key'], $throttleInfo['limit'], $throttleInfo['period']);
 
         if ($rateLimit['exceeded']) {
-            return $this->_returnErrorResponse($rateLimit);
+            return $this->_getErrorResponse($rateLimit);
         }
 
         $response = $handler->handle($request);
@@ -96,7 +96,7 @@ class ThrottleMiddleware implements MiddlewareInterface
      * @param array $rateLimit Rate limiting info.
      * @return \Psr\Http\Message\ResponseInterface
      */
-    protected function _returnErrorResponse(array $rateLimit): ResponseInterface
+    protected function _getErrorResponse(array $rateLimit): ResponseInterface
     {
         $config = $this->getConfig();
 
@@ -114,8 +114,10 @@ class ThrottleMiddleware implements MiddlewareInterface
             $message = $config['response']['body'];
         }
 
+        $retryAfter = (int)$rateLimit['reset'] - time();
         $response = $response
             ->withStatus(429)
+            ->withHeader('Retry-After', (string)$retryAfter)
             ->withType($config['response']['type'])
             ->withStringBody($message);
 

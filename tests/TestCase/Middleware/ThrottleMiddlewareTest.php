@@ -91,6 +91,7 @@ class ThrottleMiddlewareTest extends TestCase
             'X-RateLimit-Limit',
             'X-RateLimit-Remaining',
             'X-RateLimit-Reset',
+            'Retry-After',
         ];
 
         $this->assertInstanceOf(Response::class, $result);
