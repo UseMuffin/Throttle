@@ -8,6 +8,7 @@ use Cake\Cache\Engine\FileEngine;
 use Cake\Http\Response;
 use Cake\Http\ServerRequest;
 use Cake\TestSuite\TestCase;
+use Muffin\Throttle\Dto\ThrottleInfo;
 use Muffin\Throttle\Middleware\ThrottleMiddleware;
 use stdClass;
 use TestApp\Http\TestRequestHandler;
@@ -146,10 +147,10 @@ class ThrottleMiddlewareTest extends TestCase
                     'Custom-Header' => 'test/test',
                 ],
             ],
-            'throttleCallback' => function ($request, $throttle) {
+            'throttleCallback' => function (ServerRequest $request, ThrottleInfo $throttle) {
                 if ($request->is('POST')) {
-                    $throttle['key'] .= '.post';
-                    $throttle['limit'] = 5;
+                    $throttle->appendToKey('post');
+                    $throttle->setLimit(5);
                 }
 
                 return $throttle;

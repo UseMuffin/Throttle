@@ -8,6 +8,8 @@ use Cake\Core\InstanceConfigTrait;
 use Cake\Http\Response;
 use Closure;
 use InvalidArgumentException;
+use Muffin\Throttle\Dto\RateLimitInfo;
+use Muffin\Throttle\Dto\ThrottleInfo;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
@@ -78,10 +80,10 @@ class ThrottleMiddleware implements MiddlewareInterface
         $this->_setIdentifier($request);
         $this->_initCache();
 
-        $throttleInfo = $this->_getThrottle($request);
-        $rateLimit = $this->_rateLimit($throttleInfo['key'], $throttleInfo['limit'], $throttleInfo['period']);
+        $throttle = $this->_getThrottle($request);
+        $rateLimit = $this->_rateLimit($throttle);
 
-        if ($rateLimit['calls'] > $rateLimit['limit']) {
+        if ($rateLimit->limitExceeded()) {
             return $this->_getErrorResponse($rateLimit);
         }
 
@@ -93,10 +95,10 @@ class ThrottleMiddleware implements MiddlewareInterface
     /**
      * Return error response when rate limit is exceeded.
      *
-     * @param array $rateLimit Rate limiting info.
+     * @param \Muffin\Throttle\Dto\RateLimitInfo $rateLimit Rate limiting info.
      * @return \Psr\Http\Message\ResponseInterface
      */
-    protected function _getErrorResponse(array $rateLimit): ResponseInterface
+    protected function _getErrorResponse(RateLimitInfo $rateLimit): ResponseInterface
     {
         $config = $this->getConfig();
 
@@ -114,7 +116,7 @@ class ThrottleMiddleware implements MiddlewareInterface
             $message = $config['response']['body'];
         }
 
-        $retryAfter = (int)$rateLimit['reset'] - time();
+        $retryAfter = $rateLimit->getResetTimestamp() - time();
         $response = $response
             ->withStatus(429)
             ->withHeader('Retry-After', (string)$retryAfter)
@@ -128,16 +130,15 @@ class ThrottleMiddleware implements MiddlewareInterface
      * Get throttling data.
      *
      * @param \Psr\Http\Message\ServerRequestInterface $request Server request instance.
-     * @return array
-     * @psalm-return {key: string, limit: int, period: int}
+     * @return \Muffin\Throttle\Dto\ThrottleInfo
      */
-    protected function _getThrottle(ServerRequestInterface $request): array
+    protected function _getThrottle(ServerRequestInterface $request): ThrottleInfo
     {
-        $throttle = [
-            'key' => $this->_identifier,
-            'limit' => $this->getConfig('limit'),
-            'period' => $this->getConfig('period'),
-        ];
+        $throttle = new ThrottleInfo(
+            $this->_identifier,
+            $this->getConfig('limit'),
+            $this->getConfig('period')
+        );
 
         /** @param callable $callback */
         $callback = $this->getConfig('throttleCallback');
@@ -151,33 +152,27 @@ class ThrottleMiddleware implements MiddlewareInterface
     /**
      * Rate limit the request.
      *
-     * @param string $key Cache key.
-     * @param int $limit Limit.
-     * @param int $period Period.
-     * @return array
-     * @psalm-return {limit: int, calls: int, reset: int, exceeded: bool}
+     * @param \Muffin\Throttle\Dto\ThrottleInfo $throttle Throttling info.
+     * @return \Muffin\Throttle\Dto\RateLimitInfo
      */
-    protected function _rateLimit(string $key, int $limit, int $period): array
+    protected function _rateLimit(ThrottleInfo $throttle): RateLimitInfo
     {
+        $key = $throttle->getKey();
         $currentTime = time();
-        $ttl = $period;
+        $ttl = $throttle->getPeriod();
         $cacheEngine = Cache::pool(static::$cacheConfig);
 
-        /** @psalm-var array{limit: int, calls: int, reset: int}|null $rateLimit */
+        /** @var \Muffin\Throttle\Dto\RateLimitInfo|null $rateLimit */
         $rateLimit = $cacheEngine->get($key);
 
-        if ($rateLimit === null || $currentTime > $rateLimit['reset']) {
-            $rateLimit = [
-                'limit' => $limit,
-                'calls' => 1,
-                'reset' => $currentTime + $period,
-            ];
+        if ($rateLimit === null || $currentTime > $rateLimit->getResetTimestamp()) {
+            $rateLimit = new RateLimitInfo($throttle->getLimit(), 1, $currentTime + $throttle->getPeriod());
         } else {
-            $rateLimit['calls']++;
+            $rateLimit->incrementCalls();
         }
 
-        if ($rateLimit['calls'] <= $rateLimit['limit']) {
-            $ttl = $rateLimit['reset'] - $currentTime;
+        if ($rateLimit->limitExceeded()) {
+            $ttl = $rateLimit->getResetTimestamp() - $currentTime;
         }
 
         $cacheEngine->set($key, $rateLimit, $ttl);
@@ -243,10 +238,10 @@ class ThrottleMiddleware implements MiddlewareInterface
      * Extends response with X-headers containing rate limiting information.
      *
      * @param \Psr\Http\Message\ResponseInterface $response ResponseInterface instance
-     * @param array $rateLimit Rate limiting info.
+     * @param \Muffin\Throttle\Dto\RateLimitInfo $rateLimit Rate limiting info.
      * @return \Psr\Http\Message\ResponseInterface
      */
-    protected function _setHeaders(ResponseInterface $response, array $rateLimit): ResponseInterface
+    protected function _setHeaders(ResponseInterface $response, RateLimitInfo $rateLimit): ResponseInterface
     {
         $headers = $this->getConfig('headers');
 
@@ -254,14 +249,9 @@ class ThrottleMiddleware implements MiddlewareInterface
             return $response;
         }
 
-        $remaining = $rateLimit['limit'] - $rateLimit['calls'];
-        if ($remaining < 0) {
-            $remaining = 0;
-        }
-
         return $response
-            ->withHeader($headers['limit'], (string)$rateLimit['limit'])
-            ->withHeader($headers['remaining'], (string)$remaining)
-            ->withHeader($headers['reset'], (string)$rateLimit['reset']);
+            ->withHeader($headers['limit'], (string)$rateLimit->getLimit())
+            ->withHeader($headers['remaining'], (string)$rateLimit->getRemaining())
+            ->withHeader($headers['reset'], (string)$rateLimit->getResetTimestamp());
     }
 }
