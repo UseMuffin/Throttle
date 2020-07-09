@@ -15,6 +15,9 @@ use TestApp\Http\TestRequestHandler;
 
 class ThrottleMiddlewareTest extends TestCase
 {
+    /**
+     * @var class-string
+     */
     protected $engineClass = FileEngine::class;
 
     /**
@@ -111,7 +114,7 @@ class ThrottleMiddlewareTest extends TestCase
         ];
 
         $this->assertInstanceOf(Response::class, $result);
-        $this->assertEquals('application/json', $result->getType());
+        $this->assertEquals('application/json', $result->getHeaderLine('Content-Type'));
         $this->assertEquals(2, count(array_intersect($expectedHeaders, array_keys($result->getHeaders()))));
         $this->assertTrue(is_numeric($result->getHeaderLine('X-RateLimit-Reset')));
         $this->assertSame('0', $result->getHeaderLine('X-RateLimit-Remaining'));
