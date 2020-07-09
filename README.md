@@ -111,6 +111,50 @@ your configuration array:
 
 To disable the headers set `headers` key to `false`.
 
+### Customize requests weight
+
+You may use `requestWeight` configuration key, if you want to account for some requests your way.
+For example limiting number of form submits, but allow fetching the resource indefinitely
+
+In this example, we keep limit of 300 requests / minute for every named route, and the same limit for all unnamed routes.
+If the request is POST/PUT/PATCH we account that request as 100 standard requests, allowing effective maximum of 3 requests of POST/PUT/PATCH a minute
+to each named route / group of unnamed routes
+
+In the implementation you can use into account also session info, if present, allowing for different throttling for different
+user groups
+
+```php
+new \Muffin\Throttle\Middleware\ThrottleMiddleware([
+    'interval' => '+1 minute',
+    'limit' => 300,
+    'identifier' => function (ServerRequestInterface $request) {
+        $identifier = $request->getHeader('HTTP_X_FORWARDED_FOR') ?? $request->getHeader('REMOTE_ADDR');
+        if ($request instanceof ServerRequest) {
+            // use remote requester IP as identifier
+            $identifier = $request->clientIp();
+
+            $parsedRequest = Router::parseRequest($request);
+            if (!empty($parsedRequest['_name'])) {
+                // if current route is named, apply limits separately to each named route
+                $identifier .= $parsedRequest['_name'];
+            }
+        }
+        return $identifier;
+    },
+    'requestWeight' => function (ServerRequestInterface $request) {
+        if ($request instanceof \Cake\Http\ServerRequest) {
+            if ($request->is(['post', 'put', 'patch'])) {
+                // each named route or all unnamed routes toghether will be limited to
+                // 3 POST/PUT/PATCH submits each minute
+                return 100;
+            }
+        }
+        // by default every request will decrement the limit by 1
+        return 1;
+    }
+]);
+```
+
 ### Customize response object
 
 You may use `type` and `headers` subkeys of the `response` array (as you would do with a `Response` object) if you want to return a different message as the default one:
