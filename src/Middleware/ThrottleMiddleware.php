@@ -35,6 +35,7 @@ class ThrottleMiddleware implements MiddlewareInterface
             'remaining' => 'X-RateLimit-Remaining',
             'reset' => 'X-RateLimit-Reset',
         ],
+        'throttleCallback' => null,
     ];
 
     /**
@@ -130,11 +131,19 @@ class ThrottleMiddleware implements MiddlewareInterface
      */
     protected function _getThrottle(ServerRequestInterface $request): array
     {
-        return [
+        $throttle = [
             'key' => $this->_identifier,
             'limit' => $this->getConfig('limit'),
             'period' => $this->getConfig('period'),
         ];
+
+        /** @param callable $callback */
+        $callback = $this->getConfig('throttleCallback');
+        if ($callback) {
+            $throttle = $callback($request, $throttle);
+        }
+
+        return $throttle;
     }
 
     /**

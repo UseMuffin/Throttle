@@ -125,6 +125,64 @@ class ThrottleMiddlewareTest extends TestCase
         );
     }
 
+    public function testProcessWithThrottleCallback(): void
+    {
+        Cache::drop('throttle');
+        Cache::setConfig('throttle', [
+            'className' => $this->engineClass,
+            'prefix' => 'throttle_',
+        ]);
+        Cache::clear('throttle');
+
+        $middleware = new ThrottleMiddleware([
+            'limit' => 10,
+            'response' => [
+                'body' => 'Rate limit exceeded',
+                'type' => 'json',
+                'headers' => [
+                    'Custom-Header' => 'test/test',
+                ],
+            ],
+            'throttleCallback' => function ($request, $throttle) {
+                if ($request->is('POST')) {
+                    $throttle['key'] .= '.post';
+                    $throttle['limit'] = 5;
+                }
+
+                return $throttle;
+            },
+        ]);
+
+        $request = new ServerRequest([
+            'environment' => [
+                'REMOTE_ADDR' => '192.168.1.33',
+            ],
+        ]);
+
+        $result = $middleware->process(
+            $request,
+            new TestRequestHandler()
+        );
+
+        $this->assertInstanceOf(Response::class, $result);
+        $this->assertSame('10', $result->getHeaderLine('X-RateLimit-Limit'));
+
+        $request = new ServerRequest([
+            'environment' => [
+                'REMOTE_ADDR' => '192.168.1.33',
+            ],
+        ]);
+        $request = $request->withMethod('POST');
+
+        $result = $middleware->process(
+            $request,
+            new TestRequestHandler()
+        );
+
+        $this->assertInstanceOf(Response::class, $result);
+        $this->assertSame('5', $result->getHeaderLine('X-RateLimit-Limit'));
+    }
+
     /**
      * Test setting the identifier class property
      */
