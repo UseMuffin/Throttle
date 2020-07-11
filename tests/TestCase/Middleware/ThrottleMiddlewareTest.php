@@ -217,7 +217,7 @@ class ThrottleMiddlewareTest extends TestCase
         $this->assertEquals($expected, $result);
 
         EventManager::instance()->on(
-            ThrottleMiddleware::EVENT_GENERATE_IDENTIFER,
+            ThrottleMiddleware::EVENT_GET_IDENTIFER,
             [],
             function ($event) {
                 return 'my-custom-identifier';
@@ -227,7 +227,7 @@ class ThrottleMiddlewareTest extends TestCase
         $result = $reflection->method->invokeArgs($middleware, [$request]);
         $this->assertEquals('my-custom-identifier', $result);
 
-        EventManager::instance()->off(ThrottleMiddleware::EVENT_GENERATE_IDENTIFER);
+        EventManager::instance()->off(ThrottleMiddleware::EVENT_GET_IDENTIFER);
     }
 
     /**

@@ -21,7 +21,7 @@ class ThrottleMiddleware implements MiddlewareInterface, EventDispatcherInterfac
     use InstanceConfigTrait;
     use EventDispatcherTrait;
 
-    public const EVENT_GENERATE_IDENTIFER = 'Throttle.generateIdentifier';
+    public const EVENT_GET_IDENTIFER = 'Throttle.getIdentifier';
 
     public const EVENT_GET_THROTTLE_INFO = 'Throttle.getThrottleInfo';
 
@@ -201,7 +201,7 @@ class ThrottleMiddleware implements MiddlewareInterface, EventDispatcherInterfac
      */
     protected function _setIdentifier(ServerRequestInterface $request): string
     {
-        $event = $this->dispatchEvent(self::EVENT_GENERATE_IDENTIFER, [
+        $event = $this->dispatchEvent(self::EVENT_GET_IDENTIFER, [
             'request' => $request,
         ]);
         $identifier = $event->getResult() ?: $this->getConfig('identifier')($request);
