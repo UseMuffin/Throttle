@@ -5,19 +5,27 @@ namespace Muffin\Throttle\Middleware;
 
 use Cake\Cache\Cache;
 use Cake\Core\InstanceConfigTrait;
+use Cake\Event\EventDispatcherInterface;
+use Cake\Event\EventDispatcherTrait;
 use Cake\Http\Response;
-use Closure;
-use InvalidArgumentException;
 use Muffin\Throttle\ValueObject\RateLimitInfo;
 use Muffin\Throttle\ValueObject\ThrottleInfo;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
+use RuntimeException;
 
-class ThrottleMiddleware implements MiddlewareInterface
+class ThrottleMiddleware implements MiddlewareInterface, EventDispatcherInterface
 {
     use InstanceConfigTrait;
+    use EventDispatcherTrait;
+
+    public const EVENT_GENERATE_IDENTIFER = 'Throttle.generateKey';
+
+    public const EVENT_GET_THROTTLE_INFO = 'Throttle.getThrottleInfo';
+
+    public const EVENT_BEFORE_CACHE_SET = 'Throtttle.beforeCacheSet';
 
     /**
      * Default config.
@@ -37,7 +45,6 @@ class ThrottleMiddleware implements MiddlewareInterface
             'remaining' => 'X-RateLimit-Remaining',
             'reset' => 'X-RateLimit-Reset',
         ],
-        'throttleCallback' => null,
     ];
 
     /**
@@ -61,10 +68,6 @@ class ThrottleMiddleware implements MiddlewareInterface
      */
     public function __construct(array $config = [])
     {
-        $config += ['identifier' => function ($request) {
-            return $request->clientIp();
-        }];
-
         $this->setConfig($config);
     }
 
@@ -140,13 +143,12 @@ class ThrottleMiddleware implements MiddlewareInterface
             $this->getConfig('period')
         );
 
-        /** @param callable $callback */
-        $callback = $this->getConfig('throttleCallback');
-        if ($callback) {
-            $throttle = $callback($request, $throttle);
-        }
+        $event = $this->dispatchEvent(self::EVENT_GET_THROTTLE_INFO, [
+            'request' => $request,
+            'throttle' => $throttle,
+        ]);
 
-        return $throttle;
+        return $event->getResult() ?? $event->getData()['throttle'];
     }
 
     /**
@@ -175,7 +177,12 @@ class ThrottleMiddleware implements MiddlewareInterface
             $ttl = $rateLimit->getResetTimestamp() - $currentTime;
         }
 
-        $cacheEngine->set($key, $rateLimit, $ttl);
+        $event = $this->dispatchEvent(self::EVENT_BEFORE_CACHE_SET, [
+            'rateLimit' => $rateLimit,
+            'ttl' => $ttl,
+        ]);
+
+        $cacheEngine->set($key, $event->getData()['rateLimit'], $event->getData()['ttl']);
 
         return $rateLimit;
     }
@@ -185,16 +192,21 @@ class ThrottleMiddleware implements MiddlewareInterface
      * based identifier unless a callable alternative is passed.
      *
      * @param \Psr\Http\Message\ServerRequestInterface $request RequestInterface instance
-     * @return void
+     * @return string
      * @throws \InvalidArgumentException
      */
-    protected function _setIdentifier(ServerRequestInterface $request): void
+    protected function _setIdentifier(ServerRequestInterface $request): string
     {
-        $closure = $this->getConfig('identifier');
-        if (!$closure instanceof Closure) {
-            throw new InvalidArgumentException('Throttle identifier option must be a Closure instance');
+        $event = $this->dispatchEvent(self::EVENT_GENERATE_IDENTIFER, [
+            'request' => $request,
+        ]);
+        $identifier = $event->getResult() ?: $request->clientIp();
+
+        if (!is_string($identifier)) {
+            throw new RuntimeException('Throttle identifier must be a string.');
         }
-        $this->_identifier = $closure($request);
+
+        return $this->_identifier = $identifier;
     }
 
     /**

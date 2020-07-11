@@ -5,6 +5,7 @@ namespace Muffin\Throttle\Test\TestCase\Middleware;
 
 use Cake\Cache\Cache;
 use Cake\Cache\Engine\FileEngine;
+use Cake\Event\EventManager;
 use Cake\Http\Response;
 use Cake\Http\ServerRequest;
 use Cake\TestSuite\TestCase;
@@ -32,7 +33,6 @@ class ThrottleMiddlewareTest extends TestCase
         $this->assertEquals([], $result['response']['headers']);
         $this->assertEquals(60, $result['period']);
         $this->assertEquals(60, $result['limit']);
-        $this->assertTrue(is_callable($result['identifier']));
 
         $expectedHeaders = [
             'limit' => 'X-RateLimit-Limit',
@@ -160,6 +160,17 @@ class ThrottleMiddlewareTest extends TestCase
             },
         ]);
 
+        EventManager::instance()->on(
+            ThrottleMiddleware::EVENT_GET_THROTTLE_INFO,
+            [],
+            function ($event, $request, $throttle) {
+                if ($request->is('POST')) {
+                    $throttle->appendToKey('post');
+                    $throttle->setLimit(5);
+                }
+            }
+        );
+
         $request = new ServerRequest([
             'environment' => [
                 'REMOTE_ADDR' => '192.168.1.33',
@@ -188,6 +199,8 @@ class ThrottleMiddlewareTest extends TestCase
 
         $this->assertInstanceOf(Response::class, $result);
         $this->assertSame('5', $result->getHeaderLine('X-RateLimit-Limit'));
+
+        EventManager::instance()->off(ThrottleMiddleware::EVENT_GET_THROTTLE_INFO);
     }
 
     /**
@@ -195,22 +208,26 @@ class ThrottleMiddlewareTest extends TestCase
      */
     public function testSetIdentifierMethod(): void
     {
-        $this->expectException(\LogicException::class);
-
         $middleware = new ThrottleMiddleware();
         $reflection = $this->getReflection($middleware, '_setIdentifier');
 
         $request = new ServerRequest();
         $expected = $request->clientIp();
-        $result = $reflection->method->invokeArgs($middleware, [new ServerRequest()]);
+        $result = $reflection->method->invokeArgs($middleware, [$request]);
         $this->assertEquals($expected, $result);
 
-        // should throw an exception if identifier is not a callable
-        $middleware = new ThrottleMiddleware([
-            'identifier' => 'non-callable-string',
-        ]);
-        $reflection = $this->getReflection($middleware, '_setIdentifier');
-        $reflection->method->invokeArgs($middleware, [new ServerRequest()]);
+        EventManager::instance()->on(
+            ThrottleMiddleware::EVENT_GENERATE_IDENTIFER,
+            [],
+            function ($event) {
+                return 'my-custom-identifier';
+            }
+        );
+
+        $result = $reflection->method->invokeArgs($middleware, [$request]);
+        $this->assertEquals('my-custom-identifier', $result);
+
+        EventManager::instance()->off(ThrottleMiddleware::EVENT_GENERATE_IDENTIFER);
     }
 
     /**
