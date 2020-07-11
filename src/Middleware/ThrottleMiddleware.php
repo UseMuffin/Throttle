@@ -68,6 +68,10 @@ class ThrottleMiddleware implements MiddlewareInterface, EventDispatcherInterfac
      */
     public function __construct(array $config = [])
     {
+        $this->_defaultConfig['identifier'] = function ($request) {
+            return $request->clientIp();
+        };
+
         $this->setConfig($config);
     }
 
@@ -200,7 +204,7 @@ class ThrottleMiddleware implements MiddlewareInterface, EventDispatcherInterfac
         $event = $this->dispatchEvent(self::EVENT_GENERATE_IDENTIFER, [
             'request' => $request,
         ]);
-        $identifier = $event->getResult() ?: $request->clientIp();
+        $identifier = $event->getResult() ?: $this->getConfig('identifier')($request);
 
         if (!is_string($identifier)) {
             throw new RuntimeException('Throttle identifier must be a string.');
