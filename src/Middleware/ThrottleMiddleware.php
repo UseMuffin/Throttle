@@ -45,6 +45,7 @@ class ThrottleMiddleware implements MiddlewareInterface, EventDispatcherInterfac
             'remaining' => 'X-RateLimit-Remaining',
             'reset' => 'X-RateLimit-Reset',
         ],
+        'cacheConfig' => 'throttle',
     ];
 
     /**
@@ -166,7 +167,7 @@ class ThrottleMiddleware implements MiddlewareInterface, EventDispatcherInterfac
         $key = $throttle->getKey();
         $currentTime = time();
         $ttl = $throttle->getPeriod();
-        $cacheEngine = Cache::pool(static::$cacheConfig);
+        $cacheEngine = Cache::pool($this->getConfig('cacheConfig'));
 
         /** @var \Muffin\Throttle\ValueObject\RateLimitInfo|null $rateLimit */
         $rateLimit = $cacheEngine->get($key);
@@ -220,10 +221,12 @@ class ThrottleMiddleware implements MiddlewareInterface, EventDispatcherInterfac
      */
     protected function _initCache(): void
     {
-        if (Cache::getConfig(static::$cacheConfig) === null) {
-            Cache::setConfig(static::$cacheConfig, [
+        $cacheConfig = $this->getConfig('cacheConfig');
+
+        if (Cache::getConfig($cacheConfig) === null) {
+            Cache::setConfig($cacheConfig, [
                 'className' => $this->_getDefaultCacheConfigClassName(),
-                'prefix' => static::$cacheConfig . '_' . $this->_identifier,
+                'prefix' => $cacheConfig . '_' . $this->_identifier,
             ]);
         }
     }
