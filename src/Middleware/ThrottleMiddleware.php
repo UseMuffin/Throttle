@@ -21,7 +21,7 @@ class ThrottleMiddleware implements MiddlewareInterface, EventDispatcherInterfac
     use InstanceConfigTrait;
     use EventDispatcherTrait;
 
-    public const EVENT_GENERATE_IDENTIFER = 'Throttle.generateKey';
+    public const EVENT_GENERATE_IDENTIFER = 'Throttle.generateIdentifier';
 
     public const EVENT_GET_THROTTLE_INFO = 'Throttle.getThrottleInfo';
 
