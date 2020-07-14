@@ -50,13 +50,6 @@ class ThrottleMiddleware implements MiddlewareInterface, EventDispatcherInterfac
     ];
 
     /**
-     * Cache configuration name
-     *
-     * @var string
-     */
-    public static $cacheConfig = 'throttle';
-
-    /**
      * Unique client identifier
      *
      * @var string
