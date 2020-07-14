@@ -10,10 +10,6 @@
 This plugin allows you to limit the number of requests a client can make to your
 app in a given time frame.
 
-## Requirements
-
-- CakePHP cache engine with support for atomic updates
-
 ## Installation
 
 ```bash
@@ -43,32 +39,26 @@ with required config. For e.g.:
 ],
 ```
 
-**Note:** This plugin will **NOT** work when using the `File` cache engine as it
-does not support atomic increment.
-
 ### Using the Middleware
 
-Include the middleware in inside of the Application.php:
+Add the middleware to the queue and pass your custom configuration:
 
 ```php
-use Muffin\Throttle\Middleware\ThrottleMiddleware;
-use Psr\Http\Message\ServerRequestInterface;
-```
-
-Add the middleware to the stack and pass your custom configuration:
-
-```php
-public function middleware($middleware)
+public function middleware(MiddlewareQueue $middlewareQueue): MiddlewareQueue
 {
     // Various other middlewares for error handling, routing etc. added here.
 
-    $throttleMiddleware = new ThrottleMiddleware([
+    $throttleMiddleware = new \Muffin\Throttle\Middleware\ThrottleMiddleware([
+        // Data used to generate response with HTTP code 429 when limit is exceeded.
         'response' => [
             'body' => 'Rate limit exceeded',
         ],
-        'interval' => '+1 hour',
-        'limit' => 300,
-        'identifier' => function (ServerRequestInterface $request) {
+        // Time period as number of seconds
+        'period' => 60,
+        // Number of requests allowed within the above time period
+        'limit' => 100,
+        // Client identifier
+        'identifier' => function ($request) {
             if (!empty($request->getHeaderLine('Authorization'))) {
                 return str_replace('Bearer ', '', $request->getHeaderLine('Authorization'));
             }
@@ -83,14 +73,54 @@ public function middleware($middleware)
 }
 ```
 
-The above example would allow 300 requests/hour/token and would first try to
+The above example would allow 100 requests/minute/token and would first try to
 identify the client by JWT Bearer token before falling back to (Throttle default)
 IP address based identification.
 
+### Events
+
+The middleware also dispatches following event which effectively allows you to
+have multiple rate limits:
+
+#### `Throttle.getIdentifier`
+
+Instead of using the `indentifer` config you can also setup a listener for the
+`Throttle.getIdentifier` event. The event's callback would receive a request
+instance as argument and must return an identifier string.
+
+#### `Throttle.getThrottleInfo`
+
+The `Throttle.getIdentifier` event allows you to customize the `period` and `limit`
+configs for a request as well as the cache key used to store the rate limiting info.
+
+This allows you to set multiple rate limit as per your app's needs.
+
+Here's an example:
+
+```php
+\Cake\Event\EventManager::instance()->on(
+    \Muffin\Throttle\ThrottleMiddleware::EVENT_GET_THROTTLE_INFO,
+    function ($event, $request, \Muffin\Throttle\ValueObject\ThrottleInfo $throtte) {
+        // Set a different period for POST request.
+        if ($request->is('POST')) {
+            // This will change the cache key from default "{identifer}" to "{identifer}.post".
+            $throttle->appendToKey('post');
+            $throttle->setPeriod(30);
+        }
+
+        // Modify limit for logged in user
+        $identity = $request->getAttribute('identity');
+        if ($identity) {
+            $throttle->appendToKey($identity->get('role'));
+            $throttle->setLimit(200);
+        }
+    }
+);
+```
+
 ### X-headers
 
-By default Throttle will add X-headers with rate limiting information
-to all responses:
+By default Throttle will add X-headers with rate limiting information to all responses:
 
 ```
 X-RateLimit-Limit: 10
@@ -113,7 +143,8 @@ To disable the headers set `headers` key to `false`.
 
 ### Customize response object
 
-You may use `type` and `headers` subkeys of the `response` array (as you would do with a `Response` object) if you want to return a different message as the default one:
+You may use `type` and `headers` subkeys of the `response` array (as you would do
+with a `Response` object) if you want to return a different message as the default one:
 
 ```php
 new ThrottleMiddleware([
