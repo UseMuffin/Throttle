@@ -8,7 +8,6 @@ use Cake\Core\InstanceConfigTrait;
 use Cake\Event\EventDispatcherInterface;
 use Cake\Event\EventDispatcherTrait;
 use Cake\Http\Response;
-use InvalidArgumentException;
 use Muffin\Throttle\ValueObject\RateLimitInfo;
 use Muffin\Throttle\ValueObject\ThrottleInfo;
 use Psr\Http\Message\ResponseInterface;
@@ -68,7 +67,11 @@ class ThrottleMiddleware implements MiddlewareInterface, EventDispatcherInterfac
         };
 
         if (isset($config['interval'])) {
-            throw new InvalidArgumentException('`interval` config has been removed. Check the docs for replacement.');
+            $config['period'] = time() - strtotime($config['interval']);
+            trigger_error(
+                '`interval` config has been removed. Check the docs for replacement.',
+                E_USER_WARNING
+            );
         }
 
         $this->setConfig($config);
