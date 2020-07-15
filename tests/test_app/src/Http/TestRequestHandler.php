@@ -10,6 +10,9 @@ use Psr\Http\Server\RequestHandlerInterface;
 
 class TestRequestHandler implements RequestHandlerInterface
 {
+    /**
+     * @var callable
+     */
     public $callable;
 
     public function __construct(?callable $callable = null)
