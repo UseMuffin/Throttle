@@ -90,7 +90,7 @@ instance as argument and must return an identifier string.
 
 #### `Throttle.getThrottleInfo`
 
-The `Throttle.getIdentifier` event allows you to customize the `period` and `limit`
+The `Throttle.getThrottleInfo` event allows you to customize the `period` and `limit`
 configs for a request as well as the cache key used to store the rate limiting info.
 
 This allows you to set multiple rate limit as per your app's needs.
@@ -99,8 +99,8 @@ Here's an example:
 
 ```php
 \Cake\Event\EventManager::instance()->on(
-    \Muffin\Throttle\ThrottleMiddleware::EVENT_GET_THROTTLE_INFO,
-    function ($event, $request, \Muffin\Throttle\ValueObject\ThrottleInfo $throtte) {
+    \Muffin\Throttle\Middleware\ThrottleMiddleware::EVENT_GET_THROTTLE_INFO,
+    function ($event, $request, \Muffin\Throttle\ValueObject\ThrottleInfo $throttle) {
         // Set a different period for POST request.
         if ($request->is('POST')) {
             // This will change the cache key from default "{identifer}" to "{identifer}.post".
@@ -114,6 +114,25 @@ Here's an example:
             $throttle->appendToKey($identity->get('role'));
             $throttle->setLimit(200);
         }
+    }
+);
+```
+
+#### Throtttle.beforeCacheSet
+
+The `Throtttle.beforeCacheSet` event allows you to observe result of middleware configuration and previous
+`Throtttle.getIdentifier` and `Throttle.getThrottleInfo` events results.
+
+You can also use this event to modify cached `$rateLimit` and `$ttl` values,
+modifying `$throttleInfo` in this event has no effect.
+
+Example:
+
+```php
+\Cake\Event\EventManager::instance()->on(
+    \Muffin\Throttle\Middleware\ThrottleMiddleware::EVENT_BEFORE_CACHE_SET,
+    function ($event, \Muffin\Throttle\ValueObject\RateLimitInfo $rateLimit, int $ttl, \Muffin\Throttle\ValueObject\ThrottleInfo $throttleInfo) {
+        \Cake\Log\Log::debug(sprintf("key(%s) remaining(%d) resetTimestamp(%d) ttl(%d)", $throttleInfo->getKey(), $rateLimit->getRemaining(), $rateLimit->getResetTimestamp(), $ttl));
     }
 );
 ```
@@ -147,7 +166,7 @@ You may use `type` and `headers` subkeys of the `response` array (as you would d
 with a `Response` object) if you want to return a different message as the default one:
 
 ```php
-new ThrottleMiddleware([
+new \Muffin\Throttle\Middleware\ThrottleMiddleware([
     'response' => [
         'body' => json_encode(['error' => 'Rate limit exceeded']),
         'type' => 'json',
