@@ -186,7 +186,7 @@ class ThrottleMiddleware implements MiddlewareInterface, EventDispatcherInterfac
         $event = $this->dispatchEvent(self::EVENT_BEFORE_CACHE_SET, [
             'rateLimit' => $rateLimit,
             'ttl' => $ttl,
-            'throttleInfo' => $throttle,
+            'throttleInfo' => clone $throttle,
         ]);
 
         $cacheEngine->set($key, $event->getData()['rateLimit'], $event->getData()['ttl']);

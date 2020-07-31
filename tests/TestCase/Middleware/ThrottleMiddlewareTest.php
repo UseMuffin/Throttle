@@ -5,11 +5,13 @@ namespace Muffin\Throttle\Test\TestCase\Middleware;
 
 use Cake\Cache\Cache;
 use Cake\Cache\Engine\FileEngine;
+use Cake\Event\EventInterface;
 use Cake\Event\EventManager;
 use Cake\Http\Response;
 use Cake\Http\ServerRequest;
 use Cake\TestSuite\TestCase;
 use Muffin\Throttle\Middleware\ThrottleMiddleware;
+use Muffin\Throttle\ValueObject\RateLimitInfo;
 use Muffin\Throttle\ValueObject\ThrottleInfo;
 use stdClass;
 use TestApp\Http\TestRequestHandler;
@@ -228,6 +230,47 @@ class ThrottleMiddlewareTest extends TestCase
         $this->assertEquals('my-custom-identifier', $result);
 
         EventManager::instance()->off(ThrottleMiddleware::EVENT_GET_IDENTIFER);
+    }
+
+    public function testEventBeforeCacheSet(): void
+    {
+        $middleware = new ThrottleMiddleware();
+        $reflection = $this->getReflection($middleware, '_rateLimit');
+
+        $request = new ServerRequest();
+        $throttleInfo = new ThrottleInfo('key', 100, 60);
+        $expected = new RateLimitInfo(2, 2, time() + $throttleInfo->getPeriod());
+
+        EventManager::instance()->on(
+            ThrottleMiddleware::EVENT_BEFORE_CACHE_SET,
+            function ($event, $rateLimitInfo, $ttl, $throttleInfo) {
+                $this->assertInstanceOf(EventInterface::class, $event);
+                $this->assertInstanceOf(RateLimitInfo::class, $rateLimitInfo);
+                $this->assertIsNumeric($ttl);
+                $this->assertInstanceOf(ThrottleInfo::class, $throttleInfo);
+
+                $rateLimitInfo->setLimit(2);
+                $rateLimitInfo->setCalls(2);
+
+                /** @var ThrottleInfo $throttleInfo */
+                $throttleInfo->setLimit(200);
+                $throttleInfo->setPeriod(120);
+                $throttleInfo->setKey('invalid-key');
+            }
+        );
+
+        /** @var RateLimitInfo $result */
+        $result = $reflection->method->invokeArgs($middleware, [$throttleInfo]);
+
+        $this->assertInstanceOf(RateLimitInfo::class, $result);
+        $this->assertEquals(2, $result->getLimit());
+        $this->assertEquals(2, $result->getCalls());
+        // test that modifying throttleInfo at this event has no side effects
+        $this->assertEquals(100, $throttleInfo->getLimit());
+        $this->assertEquals(60, $throttleInfo->getPeriod());
+        $this->assertEquals('key', $throttleInfo->getKey());
+
+        EventManager::instance()->off(ThrottleMiddleware::EVENT_BEFORE_CACHE_SET);
     }
 
     /**
