@@ -37,6 +37,8 @@ class ThrottleFilter extends DispatcherFilter
             'request' => $event->getData('request'),
         ]);
         if ($_event->isStopped()) {
+            $event->stopPropagation();
+
             return;
         }
 

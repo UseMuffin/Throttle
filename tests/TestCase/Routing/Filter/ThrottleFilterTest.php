@@ -5,10 +5,14 @@ use Cake\Cache\Cache;
 use Cake\Cache\Engine\ApcEngine;
 use Cake\Cache\Engine\ApcuEngine;
 use Cake\Event\Event;
+use Cake\Event\EventInterface;
+use Cake\Event\EventManager;
 use Cake\Http\Response;
 use Cake\Http\ServerRequest;
 use Cake\TestSuite\TestCase;
+use Muffin\Throttle\Middleware\ThrottleMiddleware;
 use Muffin\Throttle\Routing\Filter\ThrottleFilter;
+use Psr\Http\Message\ServerRequestInterface;
 use StdClass;
 
 class ThrottleFilterTest extends TestCase
@@ -120,6 +124,44 @@ class ThrottleFilterTest extends TestCase
             'Custom-Header'
         ];
         $this->assertEquals($expectedHeaders, array_keys($result->getHeaders()));
+    }
+
+    /**
+     * Test beforeDispatch
+     */
+    public function testSkippingRequest()
+    {
+        Cache::drop('throttle');
+        Cache::setConfig('throttle', [
+            'className' => $this->engineClass,
+            'prefix' => 'throttle_'
+        ]);
+
+        $filter = new ThrottleFilter([
+            'limit' => 100,
+        ]);
+        $response = new Response();
+        $request = new ServerRequest([
+            'environment' => [
+                'REMOTE_ADDR' => '192.168.1.2'
+            ]
+        ]);
+
+        $event = new Event('Dispatcher.beforeDispatch', $this, compact('request', 'response'));
+        $this->assertNull($filter->beforeDispatch($event));
+        $this->assertFalse($event->isStopped());
+
+        EventManager::instance()->on(
+            ThrottleMiddleware::EVENT_BEFORE_THROTTLE,
+            [],
+            function (EventInterface $event, ServerRequestInterface $request) {
+                $event->stopPropagation();
+            }
+        );
+
+        $event = new Event('Dispatcher.beforeDispatch', $this, compact('request', 'response'));
+        $this->assertNull($filter->beforeDispatch($event));
+        $this->assertTrue($event->isStopped());
     }
 
     /**
