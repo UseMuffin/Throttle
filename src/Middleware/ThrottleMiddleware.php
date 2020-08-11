@@ -8,7 +8,6 @@ use Muffin\Throttle\ThrottleTrait;
 
 class ThrottleMiddleware
 {
-
     use InstanceConfigTrait;
     use ThrottleTrait;
 

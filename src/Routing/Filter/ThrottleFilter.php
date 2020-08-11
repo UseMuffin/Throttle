@@ -8,7 +8,6 @@ use Muffin\Throttle\ThrottleTrait;
 
 class ThrottleFilter extends DispatcherFilter
 {
-
     use ThrottleTrait;
 
     const EVENT_BEFORE_THROTTLE = 'Throttle.beforeThrottle';
@@ -66,7 +65,7 @@ class ThrottleFilter extends DispatcherFilter
         $response = new Response([
             'body' => $message,
             'status' => 429,
-            'type' => $config['response']['type']
+            'type' => $config['response']['type'],
         ]);
 
         if (is_array($config['response']['headers'])) {
