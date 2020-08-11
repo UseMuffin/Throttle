@@ -21,6 +21,8 @@ class ThrottleMiddleware implements MiddlewareInterface, EventDispatcherInterfac
     use InstanceConfigTrait;
     use EventDispatcherTrait;
 
+    public const EVENT_BEFORE_THROTTLE = 'Throttle.beforeThrottle';
+
     public const EVENT_GET_IDENTIFER = 'Throttle.getIdentifier';
 
     public const EVENT_GET_THROTTLE_INFO = 'Throttle.getThrottleInfo';
@@ -86,6 +88,13 @@ class ThrottleMiddleware implements MiddlewareInterface, EventDispatcherInterfac
      */
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
+        $event = $this->dispatchEvent(self::EVENT_BEFORE_THROTTLE, [
+            'request' => $request,
+        ]);
+        if ($event->isStopped()) {
+            return $handler->handle($request);
+        }
+
         $this->_setIdentifier($request);
         $this->_initCache();
 

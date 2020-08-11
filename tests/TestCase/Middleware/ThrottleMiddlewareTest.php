@@ -13,6 +13,7 @@ use Cake\TestSuite\TestCase;
 use Muffin\Throttle\Middleware\ThrottleMiddleware;
 use Muffin\Throttle\ValueObject\RateLimitInfo;
 use Muffin\Throttle\ValueObject\ThrottleInfo;
+use Psr\Http\Message\ServerRequestInterface;
 use stdClass;
 use TestApp\Http\TestRequestHandler;
 
@@ -132,6 +133,49 @@ class ThrottleMiddlewareTest extends TestCase
             $result->getHeaderLine('X-RateLimit-Reset'),
             $result2->getHeaderLine('X-RateLimit-Reset')
         );
+    }
+
+    /**
+     * Test skipping rate limiting a request if propogation of ThrottleMiddleware::EVENT_BEFORE_THROTTLE
+     * is stopped.
+     *
+     * @return void
+     */
+    public function testSkippingRequest(): void
+    {
+        $middleware = new ThrottleMiddleware();
+
+        $request = new ServerRequest([
+            'environment' => [
+                'REMOTE_ADDR' => '192.168.1.33',
+            ],
+        ]);
+
+        $result = $middleware->process(
+            $request,
+            new TestRequestHandler()
+        );
+
+        $this->assertInstanceOf(Response::class, $result);
+        $this->assertNotEmpty($result->getHeaderLine('X-RateLimit-Limit'));
+
+        EventManager::instance()->on(
+            ThrottleMiddleware::EVENT_BEFORE_THROTTLE,
+            [],
+            function (EventInterface $event, ServerRequestInterface $request) {
+                $event->stopPropagation();
+            }
+        );
+
+        $result = $middleware->process(
+            $request,
+            new TestRequestHandler()
+        );
+
+        $this->assertInstanceOf(Response::class, $result);
+        $this->assertEmpty($result->getHeaderLine('X-RateLimit-Limit'));
+
+        EventManager::instance()->off(ThrottleMiddleware::EVENT_BEFORE_THROTTLE);
     }
 
     public function testProcessWithThrottleCallback(): void

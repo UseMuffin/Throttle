@@ -82,6 +82,22 @@ IP address based identification.
 The middleware also dispatches following event which effectively allows you to
 have multiple rate limits:
 
+#### `Throttle.beforeThrottle`
+
+This is the first event that is triggered before a request is processed by the
+middleware. All rate limiting process will be bypassed if this event is stopped.
+
+```php
+\Cake\Event\EventManager::instance()->on(
+    \Muffin\Throttle\Middleware\ThrottleMiddleware::EVENT_BEFORE_THROTTLE,
+    function ($event, $request) {
+        if (/* check for something here, most likely using $request */) {
+            $event->stopPropogation();
+        }
+    }
+);
+```
+
 #### `Throttle.getIdentifier`
 
 Instead of using the `indentifer` config you can also setup a listener for the
