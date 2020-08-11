@@ -10,7 +10,6 @@ use Cake\Event\EventManager;
 use Cake\Http\Response;
 use Cake\Http\ServerRequest;
 use Cake\TestSuite\TestCase;
-use Muffin\Throttle\Middleware\ThrottleMiddleware;
 use Muffin\Throttle\Routing\Filter\ThrottleFilter;
 use Psr\Http\Message\ServerRequestInterface;
 use StdClass;
@@ -152,7 +151,7 @@ class ThrottleFilterTest extends TestCase
         $this->assertFalse($event->isStopped());
 
         EventManager::instance()->on(
-            ThrottleMiddleware::EVENT_BEFORE_THROTTLE,
+            ThrottleFilter::EVENT_BEFORE_THROTTLE,
             [],
             function (EventInterface $event, ServerRequestInterface $request) {
                 $event->stopPropagation();

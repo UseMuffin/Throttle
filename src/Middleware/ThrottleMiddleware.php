@@ -12,7 +12,7 @@ class ThrottleMiddleware
     use InstanceConfigTrait;
     use ThrottleTrait;
 
-    public const EVENT_BEFORE_THROTTLE = 'Throttle.beforeThrottle';
+    const EVENT_BEFORE_THROTTLE = 'Throttle.beforeThrottle';
 
     /**
      * Default Configuration array

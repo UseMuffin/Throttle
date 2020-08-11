@@ -11,7 +11,7 @@ class ThrottleFilter extends DispatcherFilter
 
     use ThrottleTrait;
 
-    public const EVENT_BEFORE_THROTTLE = 'Throttle.beforeThrottle';
+    const EVENT_BEFORE_THROTTLE = 'Throttle.beforeThrottle';
 
     /**
      * Class constructor.
