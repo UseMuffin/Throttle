@@ -4,10 +4,13 @@ namespace Muffin\Throttle\Test\TestCase\Middleware;
 use Cake\Cache\Cache;
 use Cake\Cache\Engine\ApcEngine;
 use Cake\Cache\Engine\ApcuEngine;
+use Cake\Event\EventInterface;
+use Cake\Event\EventManager;
 use Cake\Http\Response;
 use Cake\Http\ServerRequest;
 use Cake\TestSuite\TestCase;
 use Muffin\Throttle\Middleware\ThrottleMiddleware;
+use Psr\Http\Message\ServerRequestInterface;
 use StdClass;
 
 class ThrottleMiddlewareTest extends TestCase
@@ -328,6 +331,64 @@ class ThrottleMiddlewareTest extends TestCase
         $reflection->property->setValue($middleware, 11);
         $result = $reflection->method->invokeArgs($middleware, []);
         $this->assertEquals('0', $result);
+    }
+
+    /**
+     * Test skipping rate limiting a request if propogation of ThrottleMiddleware::EVENT_BEFORE_THROTTLE
+     * is stopped.
+     *
+     * @return void
+     */
+    public function testSkippingRequest()
+    {
+        Cache::drop('throttle');
+        Cache::setConfig('throttle', [
+            'className' => $this->engineClass,
+            'prefix' => 'throttle_'
+        ]);
+
+        $middleware = new ThrottleMiddleware([
+            'limit' => 100,
+        ]);
+
+        $response = new Response();
+        $request = new ServerRequest([
+            'environment' => [
+                'REMOTE_ADDR' => '192.168.1.33'
+            ]
+        ]);
+
+        $result = $middleware(
+            $request,
+            $response,
+            function ($request, $response) {
+                return $response;
+            }
+        );
+
+        $this->assertInstanceOf(Response::class, $result);
+        $this->assertNotEmpty($result->getHeaderLine('X-RateLimit-Limit'));
+
+        EventManager::instance()->on(
+            ThrottleMiddleware::EVENT_BEFORE_THROTTLE,
+            [],
+            function (EventInterface $event, ServerRequestInterface $request) {
+                $event->stopPropagation();
+            }
+        );
+
+        $result = $middleware(
+            $request,
+            $response,
+            function ($request, $response) {
+                return $response;
+            }
+        );
+
+        $this->assertInstanceOf(Response::class, $result);
+        $this->assertEmpty($result->getHeaderLine('X-RateLimit-Limit'));
+
+        EventManager::instance()->off(ThrottleMiddleware::EVENT_BEFORE_THROTTLE);
     }
 
     /**

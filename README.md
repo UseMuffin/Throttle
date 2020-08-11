@@ -89,6 +89,27 @@ The above example would allow 300 requests/hour/token and would first try to
 identify the client by JWT Bearer token before falling back to (Throttle default)
 IP address based identification.
 
+### Events
+
+The middleware also dispatches following event which effectively allows you to
+skip throttling:
+
+#### `Throttle.beforeThrottle`
+
+This is the first event that is triggered before a request is processed by the
+middleware. All rate limiting process will be bypassed if this event is stopped.
+
+```php
+\Cake\Event\EventManager::instance()->on(
+    \Muffin\Throttle\Middleware\ThrottleMiddleware::EVENT_BEFORE_THROTTLE,
+    function ($event, $request) {
+        if (/* check for something here, most likely using $request */) {
+            $event->stopPropogation();
+        }
+    }
+);
+```
+
 ### X-headers
 
 By default Throttle will add X-headers with rate limiting information

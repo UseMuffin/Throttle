@@ -11,6 +11,8 @@ class ThrottleFilter extends DispatcherFilter
 
     use ThrottleTrait;
 
+    public const EVENT_BEFORE_THROTTLE = 'Throttle.beforeThrottle';
+
     /**
      * Class constructor.
      *
@@ -31,6 +33,13 @@ class ThrottleFilter extends DispatcherFilter
      */
     public function beforeDispatch(Event $event)
     {
+        $_event = $this->dispatchEvent(self::EVENT_BEFORE_THROTTLE, [
+            'request' => $event->getData('request'),
+        ]);
+        if ($_event->isStopped()) {
+            return;
+        }
+
         $this->_setIdentifier($event->getData('request'));
         $this->_initCache();
         $this->_count = $this->_touch();

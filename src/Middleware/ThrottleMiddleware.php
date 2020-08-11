@@ -12,6 +12,8 @@ class ThrottleMiddleware
     use InstanceConfigTrait;
     use ThrottleTrait;
 
+    public const EVENT_BEFORE_THROTTLE = 'Throttle.beforeThrottle';
+
     /**
      * Default Configuration array
      *
@@ -40,6 +42,13 @@ class ThrottleMiddleware
      */
     public function __invoke(ServerRequest $request, Response $response, callable $next)
     {
+        $event = $this->dispatchEvent(self::EVENT_BEFORE_THROTTLE, [
+            'request' => $request,
+        ]);
+        if ($event->isStopped()) {
+            return $next($request, $response);
+        }
+
         $this->_setIdentifier($request);
         $this->_initCache();
         $this->_count = $this->_touch();

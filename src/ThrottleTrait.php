@@ -2,10 +2,12 @@
 namespace Muffin\Throttle;
 
 use Cake\Cache\Cache;
+use Cake\Event\EventDispatcherTrait;
 
 trait ThrottleTrait
 {
 
+    use EventDispatcherTrait;
     /*
      * Default config for Throttle Middleware
      *
