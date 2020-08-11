@@ -4,7 +4,7 @@ namespace Muffin\Throttle\Test\TestCase\Middleware;
 use Cake\Cache\Cache;
 use Cake\Cache\Engine\ApcEngine;
 use Cake\Cache\Engine\ApcuEngine;
-use Cake\Event\EventInterface;
+use Cake\Event\Event;
 use Cake\Event\EventManager;
 use Cake\Http\Response;
 use Cake\Http\ServerRequest;
@@ -372,7 +372,7 @@ class ThrottleMiddlewareTest extends TestCase
         EventManager::instance()->on(
             ThrottleMiddleware::EVENT_BEFORE_THROTTLE,
             [],
-            function (EventInterface $event, ServerRequestInterface $request) {
+            function (Event $event, ServerRequestInterface $request) {
                 $event->stopPropagation();
             }
         );

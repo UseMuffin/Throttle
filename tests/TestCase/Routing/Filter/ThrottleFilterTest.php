@@ -5,7 +5,6 @@ use Cake\Cache\Cache;
 use Cake\Cache\Engine\ApcEngine;
 use Cake\Cache\Engine\ApcuEngine;
 use Cake\Event\Event;
-use Cake\Event\EventInterface;
 use Cake\Event\EventManager;
 use Cake\Http\Response;
 use Cake\Http\ServerRequest;
@@ -153,7 +152,7 @@ class ThrottleFilterTest extends TestCase
         EventManager::instance()->on(
             ThrottleFilter::EVENT_BEFORE_THROTTLE,
             [],
-            function (EventInterface $event, ServerRequestInterface $request) {
+            function (Event $event, ServerRequestInterface $request) {
                 $event->stopPropagation();
             }
         );
