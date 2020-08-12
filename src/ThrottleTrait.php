@@ -2,9 +2,11 @@
 namespace Muffin\Throttle;
 
 use Cake\Cache\Cache;
+use Cake\Event\EventDispatcherTrait;
 
 trait ThrottleTrait
 {
+    use EventDispatcherTrait;
 
     /*
      * Default config for Throttle Middleware
@@ -15,7 +17,7 @@ trait ThrottleTrait
         'response' => [
             'body' => 'Rate limit exceeded',
             'type' => 'text/html',
-            'headers' => []
+            'headers' => [],
         ],
         'interval' => '+1 minute',
         'limit' => 10,
@@ -23,7 +25,7 @@ trait ThrottleTrait
             'limit' => 'X-RateLimit-Limit',
             'remaining' => 'X-RateLimit-Remaining',
             'reset' => 'X-RateLimit-Reset',
-        ]
+        ],
     ];
 
     /**

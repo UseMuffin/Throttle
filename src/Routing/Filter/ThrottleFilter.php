@@ -2,14 +2,16 @@
 namespace Muffin\Throttle\Routing\Filter;
 
 use Cake\Event\Event;
+use Cake\Event\EventDispatcherInterface;
 use Cake\Http\Response;
 use Cake\Routing\DispatcherFilter;
 use Muffin\Throttle\ThrottleTrait;
 
-class ThrottleFilter extends DispatcherFilter
+class ThrottleFilter extends DispatcherFilter implements EventDispatcherInterface
 {
-
     use ThrottleTrait;
+
+    const EVENT_BEFORE_THROTTLE = 'Throttle.beforeThrottle';
 
     /**
      * Class constructor.
@@ -31,6 +33,15 @@ class ThrottleFilter extends DispatcherFilter
      */
     public function beforeDispatch(Event $event)
     {
+        $_event = $this->dispatchEvent(self::EVENT_BEFORE_THROTTLE, [
+            'request' => $event->getData('request'),
+        ]);
+        if ($_event->isStopped()) {
+            $event->stopPropagation();
+
+            return;
+        }
+
         $this->_setIdentifier($event->getData('request'));
         $this->_initCache();
         $this->_count = $this->_touch();
@@ -55,7 +66,7 @@ class ThrottleFilter extends DispatcherFilter
         $response = new Response([
             'body' => $message,
             'status' => 429,
-            'type' => $config['response']['type']
+            'type' => $config['response']['type'],
         ]);
 
         if (is_array($config['response']['headers'])) {

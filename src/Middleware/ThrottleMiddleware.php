@@ -2,15 +2,17 @@
 namespace Muffin\Throttle\Middleware;
 
 use Cake\Core\InstanceConfigTrait;
+use Cake\Event\EventDispatcherInterface;
 use Cake\Http\Response;
 use Cake\Http\ServerRequest;
 use Muffin\Throttle\ThrottleTrait;
 
-class ThrottleMiddleware
+class ThrottleMiddleware implements EventDispatcherInterface
 {
-
     use InstanceConfigTrait;
     use ThrottleTrait;
+
+    const EVENT_BEFORE_THROTTLE = 'Throttle.beforeThrottle';
 
     /**
      * Default Configuration array
@@ -40,6 +42,13 @@ class ThrottleMiddleware
      */
     public function __invoke(ServerRequest $request, Response $response, callable $next)
     {
+        $event = $this->dispatchEvent(self::EVENT_BEFORE_THROTTLE, [
+            'request' => $request,
+        ]);
+        if ($event->isStopped()) {
+            return $next($request, $response);
+        }
+
         $this->_setIdentifier($request);
         $this->_initCache();
         $this->_count = $this->_touch();
