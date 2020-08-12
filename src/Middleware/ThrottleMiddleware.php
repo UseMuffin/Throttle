@@ -2,11 +2,12 @@
 namespace Muffin\Throttle\Middleware;
 
 use Cake\Core\InstanceConfigTrait;
+use Cake\Event\EventDispatcherInterface;
 use Cake\Http\Response;
 use Cake\Http\ServerRequest;
 use Muffin\Throttle\ThrottleTrait;
 
-class ThrottleMiddleware
+class ThrottleMiddleware implements EventDispatcherInterface
 {
     use InstanceConfigTrait;
     use ThrottleTrait;

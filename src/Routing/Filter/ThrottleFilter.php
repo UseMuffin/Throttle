@@ -2,11 +2,12 @@
 namespace Muffin\Throttle\Routing\Filter;
 
 use Cake\Event\Event;
+use Cake\Event\EventDispatcherInterface;
 use Cake\Http\Response;
 use Cake\Routing\DispatcherFilter;
 use Muffin\Throttle\ThrottleTrait;
 
-class ThrottleFilter extends DispatcherFilter
+class ThrottleFilter extends DispatcherFilter implements EventDispatcherInterface
 {
     use ThrottleTrait;
 
