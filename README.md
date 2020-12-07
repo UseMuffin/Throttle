@@ -1,6 +1,6 @@
 # Throttle
 
-[![Build Status](https://img.shields.io/travis/UseMuffin/Throttle/master.svg?style=flat-square)](https://travis-ci.org/UseMuffin/Throttle)
+[![Build Status](https://img.shields.io/github/workflow/status/UseMuffin/Throttle/CI/master?style=flat-square)](https://github.com/UseMuffin/Throttle/actions?query=workflow%3ACI+branch%3Amaster)
 [![Coverage Status](https://img.shields.io/codecov/c/github/UseMuffin/Throttle.svg?style=flat-square)](https://codecov.io/github/UseMuffin/Throttle)
 [![Total Downloads](https://img.shields.io/packagist/dt/muffin/throttle.svg?style=flat-square)](https://packagist.org/packages/muffin/throttle)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](LICENSE)
@@ -19,12 +19,6 @@ To make your application load the plugin either run:
 
 ```bash
 ./bin/cake plugin load Muffin/Throttle
-```
-
-or add the following line to `src/Application.php`:
-
-```php
-$this->addPlugin('Muffin/Throttle');
 ```
 
 ## Configuration
