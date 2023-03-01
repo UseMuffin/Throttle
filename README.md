@@ -86,7 +86,7 @@ middleware. All rate limiting process will be bypassed if this event is stopped.
     \Muffin\Throttle\Middleware\ThrottleMiddleware::EVENT_BEFORE_THROTTLE,
     function ($event, $request) {
         if (/* check for something here, most likely using $request */) {
-            $event->stopPropogation();
+            $event->stopPropagation();
         }
     }
 );
