@@ -331,6 +331,8 @@ class ThrottleMiddlewareTest extends TestCase
         Cache::drop('throttle');
 
         $middleware = new ThrottleMiddleware();
+        $reflection = $this->getReflection($middleware, '_setIdentifier');
+        $reflection->method->invokeArgs($middleware, [new ServerRequest()]);
         $reflection = $this->getReflection($middleware, '_initCache');
         $reflection->method->invokeArgs($middleware, []);
 
