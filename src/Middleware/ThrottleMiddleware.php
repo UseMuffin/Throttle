@@ -34,7 +34,7 @@ class ThrottleMiddleware implements MiddlewareInterface, EventDispatcherInterfac
      *
      * @var array
      */
-    protected $_defaultConfig = [
+    protected array $_defaultConfig = [
         'response' => [
             'body' => 'Rate limit exceeded',
             'type' => 'text/plain',
@@ -55,7 +55,7 @@ class ThrottleMiddleware implements MiddlewareInterface, EventDispatcherInterfac
      *
      * @var string
      */
-    protected $_identifier;
+    protected string $_identifier;
 
     /**
      * Throttle Middleware constructor.
@@ -128,11 +128,7 @@ class ThrottleMiddleware implements MiddlewareInterface, EventDispatcherInterfac
             }
         }
 
-        if (isset($config['message'])) {
-            $message = $config['message'];
-        } else {
-            $message = $config['response']['body'];
-        }
+        $message = $config['message'] ?? $config['response']['body'];
 
         $retryAfter = $rateLimit->getResetTimestamp() - time();
         $response = $response
@@ -255,7 +251,7 @@ class ThrottleMiddleware implements MiddlewareInterface, EventDispatcherInterfac
         $engine = (string)$config['className'];
 
         // short cache engine names can be returned immediately
-        if (strpos($engine, '\\') === false) {
+        if (!str_contains($engine, '\\')) {
             return $engine;
         }
         // fully namespace cache engine names need extracting class name

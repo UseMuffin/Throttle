@@ -22,7 +22,7 @@ class ThrottleMiddlewareTest extends TestCase
     /**
      * @var class-string
      */
-    protected $engineClass = FileEngine::class;
+    protected string $engineClass = FileEngine::class;
 
     /**
      * Test __construct
@@ -57,7 +57,7 @@ class ThrottleMiddlewareTest extends TestCase
         ]);
         $result = $middleware->getConfig();
 
-        $this->assertTrue(array_key_exists('headers', $result['response']));
+        $this->assertArrayHasKey('headers', $result['response']);
     }
 
     /**

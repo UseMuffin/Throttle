@@ -12,17 +12,17 @@ class RateLimitInfo
     /**
      * @var int
      */
-    protected $limit;
+    protected int $limit;
 
     /**
      * @var int
      */
-    protected $calls;
+    protected int $calls;
 
     /**
      * @var int
      */
-    protected $resetTimestamp;
+    protected int $resetTimestamp;
 
     public function __construct(int $limit = 0, int $calls = 0, int $resetTimestamp = 0)
     {
@@ -40,7 +40,7 @@ class RateLimitInfo
      * @param int $limit
      * @return $this
      */
-    public function setLimit(int $limit)
+    public function setLimit(int $limit): self
     {
         $this->limit = $limit;
 
@@ -55,7 +55,7 @@ class RateLimitInfo
     /**
      * @return $this
      */
-    public function setCalls(int $calls)
+    public function setCalls(int $calls): self
     {
         $this->calls = $calls;
 
@@ -65,7 +65,7 @@ class RateLimitInfo
     /**
      * @return $this
      */
-    public function incrementCalls()
+    public function incrementCalls(): self
     {
         $this->calls++;
 
@@ -80,7 +80,7 @@ class RateLimitInfo
     /**
      * @return $this
      */
-    public function setResetTimestamp(int $resetTimestamp)
+    public function setResetTimestamp(int $resetTimestamp): self
     {
         $this->resetTimestamp = $resetTimestamp;
 

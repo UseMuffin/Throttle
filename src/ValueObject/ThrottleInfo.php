@@ -12,17 +12,17 @@ class ThrottleInfo
     /**
      * @var int
      */
-    protected $limit;
+    protected int $limit;
 
     /**
      * @var int
      */
-    protected $period;
+    protected int $period;
 
     /**
      * @var string
      */
-    protected $key;
+    protected string $key;
 
     public function __construct(string $key = '', int $limit = 0, int $period = 0)
     {
@@ -39,7 +39,7 @@ class ThrottleInfo
     /**
      * @return $this
      */
-    public function setLimit(int $limit)
+    public function setLimit(int $limit): self
     {
         $this->limit = $limit;
 
@@ -54,7 +54,7 @@ class ThrottleInfo
     /**
      * @return $this
      */
-    public function setPeriod(int $period)
+    public function setPeriod(int $period): self
     {
         $this->period = $period;
 
@@ -69,7 +69,7 @@ class ThrottleInfo
     /**
      * @return $this
      */
-    public function setKey(string $key)
+    public function setKey(string $key): self
     {
         $this->key = $key;
 
@@ -79,7 +79,7 @@ class ThrottleInfo
     /**
      * @return $this
      */
-    public function appendToKey(string $key)
+    public function appendToKey(string $key): self
     {
         $this->key .= '.' . $key;
 
