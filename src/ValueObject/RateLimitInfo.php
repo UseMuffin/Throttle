@@ -40,7 +40,7 @@ class RateLimitInfo
      * @param int $limit
      * @return $this
      */
-    public function setLimit(int $limit): self
+    public function setLimit(int $limit)
     {
         $this->limit = $limit;
 
@@ -55,7 +55,7 @@ class RateLimitInfo
     /**
      * @return $this
      */
-    public function setCalls(int $calls): self
+    public function setCalls(int $calls)
     {
         $this->calls = $calls;
 
@@ -65,7 +65,7 @@ class RateLimitInfo
     /**
      * @return $this
      */
-    public function incrementCalls(): self
+    public function incrementCalls()
     {
         $this->calls++;
 
@@ -80,7 +80,7 @@ class RateLimitInfo
     /**
      * @return $this
      */
-    public function setResetTimestamp(int $resetTimestamp): self
+    public function setResetTimestamp(int $resetTimestamp)
     {
         $this->resetTimestamp = $resetTimestamp;
 

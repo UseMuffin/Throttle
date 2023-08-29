@@ -39,7 +39,7 @@ class ThrottleInfo
     /**
      * @return $this
      */
-    public function setLimit(int $limit): self
+    public function setLimit(int $limit)
     {
         $this->limit = $limit;
 
@@ -54,7 +54,7 @@ class ThrottleInfo
     /**
      * @return $this
      */
-    public function setPeriod(int $period): self
+    public function setPeriod(int $period)
     {
         $this->period = $period;
 
@@ -69,7 +69,7 @@ class ThrottleInfo
     /**
      * @return $this
      */
-    public function setKey(string $key): self
+    public function setKey(string $key)
     {
         $this->key = $key;
 
@@ -79,7 +79,7 @@ class ThrottleInfo
     /**
      * @return $this
      */
-    public function appendToKey(string $key): self
+    public function appendToKey(string $key)
     {
         $this->key .= '.' . $key;
 
