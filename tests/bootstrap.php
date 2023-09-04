@@ -2,15 +2,11 @@
 declare(strict_types=1);
 
 /**
- * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
- * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
+ * Test suite bootstrap.
  *
- * Licensed under The MIT License
- * Redistributions of files must retain the above copyright notice.
- *
- * @copyright     Cake Software Foundation, Inc. (https://cakefoundation.org)
- * @link          https://cakephp.org CakePHP(tm) Project
- * @license       https://www.opensource.org/licenses/mit-license.php MIT License
+ * This function is used to find the location of CakePHP whether CakePHP
+ * has been installed as a dependency of the plugin, or the plugin is itself
+ * installed as a dependency of an application.
  */
 
 use Cake\Cache\Cache;
@@ -50,7 +46,7 @@ mb_internal_encoding('UTF-8');
 
 Configure::write('debug', true);
 Configure::write('App', [
-    'namespace' => 'DebugKit\TestApp',
+    'namespace' => 'Muffin\Throttle',
     'encoding' => 'UTF-8',
     'base' => false,
     'baseUrl' => false,
@@ -90,7 +86,7 @@ Cache::setConfig([
 
 // Ensure default test connection is defined
 if (!getenv('DB_URL')) {
-    putenv('DB_URL=sqlite://127.0.0.1/' . TMP . 'debug_kit_test.sqlite');
+    putenv('DB_URL=sqlite://127.0.0.1/' . TMP . 'test.sqlite');
 }
 
 $config = [
@@ -98,7 +94,6 @@ $config = [
     'timezone' => 'UTC',
 ];
 
-// Use the test connection for 'debug_kit' as well.
 ConnectionManager::setConfig('test', $config);
 
 Log::setConfig([
@@ -121,5 +116,5 @@ Plugin::getCollection()->add(new ThrottlePlugin());
 // Create test database schema
 if (env('FIXTURE_SCHEMA_METADATA')) {
     $loader = new SchemaLoader();
-    $loader->loadInternalFile(env('FIXTURE_SCHEMA_METADATA'), 'test');
+    $loader->loadInternalFile(env('FIXTURE_SCHEMA_METADATA'));
 }

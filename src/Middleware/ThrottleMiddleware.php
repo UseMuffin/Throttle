@@ -16,9 +16,18 @@ use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use RuntimeException;
 
+/**
+ * ThrottleMiddleware
+ *
+ * @implements  \Cake\Event\EventDispatcherInterface<\Muffin\Throttle\Middleware\ThrottleMiddleware>
+ */
 class ThrottleMiddleware implements MiddlewareInterface, EventDispatcherInterface
 {
     use InstanceConfigTrait;
+
+    /**
+     * @use \Cake\Event\EventDispatcherTrait<\Muffin\Throttle\Middleware\ThrottleMiddleware>
+     */
     use EventDispatcherTrait;
 
     public const EVENT_BEFORE_THROTTLE = 'Throttle.beforeThrottle';
@@ -247,9 +256,9 @@ class ThrottleMiddleware implements MiddlewareInterface, EventDispatcherInterfac
      */
     protected function _getDefaultCacheConfigClassName(): string
     {
+        /** @var array $config */
         $config = Cache::getConfig('default');
-        $engine = (string)$config['className'];
-
+        $engine = !empty($config['className']) ? (string)$config['className'] : '';
         // short cache engine names can be returned immediately
         if (!str_contains($engine, '\\')) {
             return $engine;

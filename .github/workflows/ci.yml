@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - cake5
   pull_request:
     branches:
       - '*'
