@@ -12,17 +12,17 @@ class ThrottleInfo
     /**
      * @var int
      */
-    protected $limit;
+    protected int $limit;
 
     /**
      * @var int
      */
-    protected $period;
+    protected int $period;
 
     /**
      * @var string
      */
-    protected $key;
+    protected string $key;
 
     public function __construct(string $key = '', int $limit = 0, int $period = 0)
     {
