@@ -94,6 +94,7 @@ class ThrottleMiddleware implements MiddlewareInterface, EventDispatcherInterfac
      * @param \Psr\Http\Message\ServerRequestInterface $request The request.
      * @param \Psr\Http\Server\RequestHandlerInterface $handler The request handler.
      * @return \Psr\Http\Message\ResponseInterface A response.
+     * @throws \Psr\SimpleCache\InvalidArgumentException
      */
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
@@ -176,6 +177,7 @@ class ThrottleMiddleware implements MiddlewareInterface, EventDispatcherInterfac
      *
      * @param \Muffin\Throttle\ValueObject\ThrottleInfo $throttle Throttling info.
      * @return \Muffin\Throttle\ValueObject\RateLimitInfo
+     * @throws \Psr\SimpleCache\InvalidArgumentException
      */
     protected function _rateLimit(ThrottleInfo $throttle): RateLimitInfo
     {
