@@ -1,6 +1,7 @@
 # Throttle
 
-[![Build Status](https://img.shields.io/github/workflow/status/UseMuffin/Throttle/CI/master?style=flat-square)](https://github.com/UseMuffin/Throttle/actions?query=workflow%3ACI+branch%3Amaster)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/UseMuffin/Throttle/ci.yml?style=flat-square&branch=master
+)](https://github.com/UseMuffin/Throttle/actions?query=workflow%3ACI+branch%3Amaster)
 [![Coverage Status](https://img.shields.io/codecov/c/github/UseMuffin/Throttle.svg?style=flat-square)](https://codecov.io/github/UseMuffin/Throttle)
 [![Total Downloads](https://img.shields.io/packagist/dt/muffin/throttle.svg?style=flat-square)](https://packagist.org/packages/muffin/throttle)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](LICENSE)
