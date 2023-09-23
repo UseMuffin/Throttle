@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 use Cake\Core\Plugin;
+use Muffin\Throttle\ThrottlePlugin;
 
 /**
  * Test suite bootstrap.
@@ -25,4 +26,4 @@ unset($findRoot);
 chdir($root);
 require $root . '/vendor/cakephp/cakephp/tests/bootstrap.php';
 
-Plugin::getCollection()->add(new \Muffin\Throttle\Plugin());
+Plugin::getCollection()->add(new ThrottlePlugin());

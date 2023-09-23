@@ -14,6 +14,7 @@ use Muffin\Throttle\Middleware\ThrottleMiddleware;
 use Muffin\Throttle\ValueObject\RateLimitInfo;
 use Muffin\Throttle\ValueObject\ThrottleInfo;
 use Psr\Http\Message\ServerRequestInterface;
+use ReflectionClass;
 use stdClass;
 use TestApp\Http\TestRequestHandler;
 
@@ -22,7 +23,7 @@ class ThrottleMiddlewareTest extends TestCase
     /**
      * @var class-string
      */
-    protected $engineClass = FileEngine::class;
+    protected string $engineClass = FileEngine::class;
 
     /**
      * Test __construct
@@ -57,7 +58,7 @@ class ThrottleMiddlewareTest extends TestCase
         ]);
         $result = $middleware->getConfig();
 
-        $this->assertTrue(array_key_exists('headers', $result['response']));
+        $this->assertArrayHasKey('headers', $result['response']);
     }
 
     /**
@@ -281,9 +282,7 @@ class ThrottleMiddlewareTest extends TestCase
         $middleware = new ThrottleMiddleware();
         $reflection = $this->getReflection($middleware, '_rateLimit');
 
-        $request = new ServerRequest();
         $throttleInfo = new ThrottleInfo('key', 100, 60);
-        $expected = new RateLimitInfo(2, 2, time() + $throttleInfo->getPeriod());
 
         EventManager::instance()->on(
             ThrottleMiddleware::EVENT_BEFORE_CACHE_SET,
@@ -331,6 +330,8 @@ class ThrottleMiddlewareTest extends TestCase
         Cache::drop('throttle');
 
         $middleware = new ThrottleMiddleware();
+        $reflection = $this->getReflection($middleware, '_setIdentifier');
+        $reflection->method->invokeArgs($middleware, [new ServerRequest()]);
         $reflection = $this->getReflection($middleware, '_initCache');
         $reflection->method->invokeArgs($middleware, []);
 
@@ -381,7 +382,7 @@ class ThrottleMiddlewareTest extends TestCase
     protected function getReflection(object $object, ?string $method = null, ?string $property = null): object
     {
         $obj = new stdClass();
-        $obj->class = new \ReflectionClass(get_class($object));
+        $obj->class = new ReflectionClass(get_class($object));
 
         $obj->method = null;
         if ($method) {

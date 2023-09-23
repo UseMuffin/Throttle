@@ -12,17 +12,17 @@ class RateLimitInfo
     /**
      * @var int
      */
-    protected $limit;
+    protected int $limit;
 
     /**
      * @var int
      */
-    protected $calls;
+    protected int $calls;
 
     /**
      * @var int
      */
-    protected $resetTimestamp;
+    protected int $resetTimestamp;
 
     public function __construct(int $limit = 0, int $calls = 0, int $resetTimestamp = 0)
     {

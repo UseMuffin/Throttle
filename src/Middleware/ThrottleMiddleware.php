@@ -16,9 +16,18 @@ use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use RuntimeException;
 
+/**
+ * ThrottleMiddleware
+ *
+ * @implements  \Cake\Event\EventDispatcherInterface<\Muffin\Throttle\Middleware\ThrottleMiddleware>
+ */
 class ThrottleMiddleware implements MiddlewareInterface, EventDispatcherInterface
 {
     use InstanceConfigTrait;
+
+    /**
+     * @use \Cake\Event\EventDispatcherTrait<\Muffin\Throttle\Middleware\ThrottleMiddleware>
+     */
     use EventDispatcherTrait;
 
     public const EVENT_BEFORE_THROTTLE = 'Throttle.beforeThrottle';
@@ -34,7 +43,7 @@ class ThrottleMiddleware implements MiddlewareInterface, EventDispatcherInterfac
      *
      * @var array
      */
-    protected $_defaultConfig = [
+    protected array $_defaultConfig = [
         'response' => [
             'body' => 'Rate limit exceeded',
             'type' => 'text/plain',
@@ -55,7 +64,7 @@ class ThrottleMiddleware implements MiddlewareInterface, EventDispatcherInterfac
      *
      * @var string
      */
-    protected $_identifier;
+    protected string $_identifier;
 
     /**
      * Throttle Middleware constructor.
@@ -85,6 +94,7 @@ class ThrottleMiddleware implements MiddlewareInterface, EventDispatcherInterfac
      * @param \Psr\Http\Message\ServerRequestInterface $request The request.
      * @param \Psr\Http\Server\RequestHandlerInterface $handler The request handler.
      * @return \Psr\Http\Message\ResponseInterface A response.
+     * @throws \Psr\SimpleCache\InvalidArgumentException
      */
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
@@ -128,11 +138,7 @@ class ThrottleMiddleware implements MiddlewareInterface, EventDispatcherInterfac
             }
         }
 
-        if (isset($config['message'])) {
-            $message = $config['message'];
-        } else {
-            $message = $config['response']['body'];
-        }
+        $message = $config['message'] ?? $config['response']['body'];
 
         $retryAfter = $rateLimit->getResetTimestamp() - time();
         $response = $response
@@ -171,6 +177,7 @@ class ThrottleMiddleware implements MiddlewareInterface, EventDispatcherInterfac
      *
      * @param \Muffin\Throttle\ValueObject\ThrottleInfo $throttle Throttling info.
      * @return \Muffin\Throttle\ValueObject\RateLimitInfo
+     * @throws \Psr\SimpleCache\InvalidArgumentException
      */
     protected function _rateLimit(ThrottleInfo $throttle): RateLimitInfo
     {
@@ -251,11 +258,11 @@ class ThrottleMiddleware implements MiddlewareInterface, EventDispatcherInterfac
      */
     protected function _getDefaultCacheConfigClassName(): string
     {
+        /** @var array $config */
         $config = Cache::getConfig('default');
-        $engine = (string)$config['className'];
-
+        $engine = !empty($config['className']) ? (string)$config['className'] : '';
         // short cache engine names can be returned immediately
-        if (strpos($engine, '\\') === false) {
+        if (!str_contains($engine, '\\')) {
             return $engine;
         }
         // fully namespace cache engine names need extracting class name
